@@ -1,59 +1,32 @@
-"""Utility functions for the Resume Tailoring Application"""
-import logging
-from typing import Dict, Any
-import os
+"""Utility classes and functions."""
+import time
+from typing import Dict
 
 
-def setup_logging() -> logging.Logger:
-    """Set up and configure logging."""
-    logger = logging.getLogger('resume_tailor')
-    
-    if not logger.handlers:
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        
-        log_level = os.getenv('LOG_LEVEL', 'INFO')
-        logger.setLevel(getattr(logging, log_level))
-        
-        # Add file handler for error logging
-        error_handler = logging.FileHandler('api_errors.log')
-        error_handler.setLevel(logging.ERROR)
-        error_handler.setFormatter(formatter)
-        logger.addHandler(error_handler)
-    
-    return logger
+class RateLimiter:
+    """Rate limiter for API calls."""
 
+    def __init__(self, requests_per_minute: int = 60):
+        """Initialize rate limiter."""
+        self.requests_per_minute = requests_per_minute
+        self.requests: Dict[int, int] = {}
 
-def validate_input(data: Dict[str, Any]) -> bool:
-    """Validate input data for resume processing."""
-    required_fields = ['resume', 'job_description']
-    
-    if not all(field in data for field in required_fields):
-        return False
-    
-    if not isinstance(data['resume'], str) or not data['resume'].strip():
-        return False
-    
-    if not isinstance(data['job_description'], str) or \
-            not data['job_description'].strip():
-        return False
-    
-    if 'model' in data and not isinstance(data['model'], str):
-        return False
-    
-    return True
+    def can_access(self) -> bool:
+        """Check if request is allowed under rate limit."""
+        current_minute = int(time.time() / 60)
 
+        # Clean old entries
+        self.requests = {
+            minute: count
+            for minute, count in self.requests.items()
+            if minute >= current_minute - 1
+        }
 
-def sanitize_input(text: str) -> str:
-    """Sanitize input text."""
-    # Remove potentially harmful characters
-    text = ''.join(char for char in text if ord(char) < 128)
-    
-    # Basic XSS prevention
-    text = text.replace('<', '&lt;').replace('>', '&gt;')
-    
-    return text.strip()
+        # Check current minute's requests
+        current_requests = self.requests.get(current_minute, 0)
+        if current_requests >= self.requests_per_minute:
+            return False
+
+        # Update request count
+        self.requests[current_minute] = current_requests + 1
+        return True
