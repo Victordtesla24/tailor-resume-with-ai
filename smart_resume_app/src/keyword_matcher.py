@@ -14,52 +14,101 @@ class SectionDetector:
     def __init__(self):
         """Initialize section detector."""
         self.section_patterns = {
-            "summary": r"(?i)(summary|profile|objective)",
-            "experience": r"(?i)(experience|work|employment|history)",
-            "education": r"(?i)(education|academic|qualification)",
-            "skills": r"(?i)(skills|expertise|competencies)",
-            "projects": r"(?i)(projects|portfolio)",
-            "certifications": r"(?i)(certifications|certificates)",
-            "languages": r"(?i)(languages|linguistic)",
-            "interests": r"(?i)(interests|hobbies)",
-            "references": r"(?i)(references|recommendations)"
+            "summary": (
+                r"(?i)(professional\s+)?summary|"
+                r"profile|objective"
+            ),
+            "experience": (
+                r"(?i)(experience|work|"
+                r"employment|history)"
+            ),
+            "education": (
+                r"(?i)(education|academic|"
+                r"qualification)"
+            ),
+            "skills": (
+                r"(?i)(skills|expertise|"
+                r"competencies)"
+            ),
+            "projects": (
+                r"(?i)(projects|portfolio)"
+            ),
+            "certifications": (
+                r"(?i)(certifications|certificates)"
+            ),
+            "languages": (
+                r"(?i)(languages|linguistic)"
+            ),
+            "interests": (
+                r"(?i)(interests|hobbies)"
+            ),
+            "references": (
+                r"(?i)(references|recommendations)"
+            )
         }
 
-    def identify_sections(self, doc) -> Dict[str, List[int]]:
-        """Identify sections in a Word document."""
+    def _is_section_header(self, line: str, pattern: str) -> bool:
+        """Check if a line matches a section header pattern."""
+        pattern = pattern.replace('(?i)', '')
+        line = line.strip()
+        flags = re.IGNORECASE
         try:
-            sections = {}
-            current_section = None
-            section_start = 0
+            match = re.fullmatch(pattern, line, flags)
+            return bool(match)
+        except re.error:
+            return False
 
-            for idx, para in enumerate(doc.paragraphs):
-                text = para.text.strip()
-                if not text:
+    def identify_sections(self, text: str) -> Dict[str, str]:
+        """Identify sections in text content."""
+        try:
+            if not text.strip():
+                return {}
+
+            sections = {}
+            lines = [line.strip() for line in text.split('\n')]
+            if not lines:
+                return {}
+
+            current_section = None
+            current_content = []
+
+            for line in lines:
+                if not line:
                     continue
 
-                # Check if paragraph is a section header
+                print(f"\nChecking line: {line}")
+                is_header = False
+
                 for section, pattern in self.section_patterns.items():
-                    if re.search(pattern, text):
-                        # Save previous section if exists
-                        if current_section:
-                            sections[current_section] = list(
-                                range(section_start, idx)
-                            )
+                    if self._is_section_header(line, pattern):
+                        msg = f"Found section header: {section}"
+                        print(msg)
+                        if current_section and current_content:
+                            content = '\n'.join(current_content)
+                            sections[current_section] = content
                         current_section = section
-                        section_start = idx + 1
+                        current_content = []
+                        is_header = True
                         break
 
-            # Save final section
-            if current_section:
-                sections[current_section] = list(
-                    range(section_start, len(doc.paragraphs))
-                )
+                if not is_header and current_section:
+                    msg = f"Added content to {current_section}: {line}"
+                    current_content.append(line)
+                    print(msg)
 
+            if current_section and current_content:
+                content = '\n'.join(current_content)
+                sections[current_section] = content
+
+            print("\nFinal sections:")
+            print(sections)
             return sections
 
         except Exception as e:
-            logger.error(f"Error identifying sections: {str(e)}")
-            raise ProcessingError(f"Failed to identify sections: {str(e)}")
+            logger.error("Error identifying sections: %s", str(e))
+            raise ProcessingError(
+                f"Failed to identify sections: {str(e)}"
+            ) from e
 
 
 class KeywordMatcher:
@@ -73,30 +122,24 @@ class KeywordMatcher:
         """Load common skill patterns."""
         return {
             "programming": [
-                "python", "java", "javascript", "c++",
-                "ruby", "php", "typescript", "golang",
-                "rust", "scala"
+                "python", "java", "javascript", "c++", "ruby", "php",
+                "typescript", "golang", "rust", "scala", "python3", "py3"
             ],
             "frameworks": [
-                "react", "angular", "vue", "django",
-                "flask", "spring", "express", "rails",
-                "laravel", "fastapi"
+                "react", "angular", "vue", "django", "flask", "spring",
+                "express", "rails", "laravel", "fastapi"
             ],
             "cloud": [
-                "aws", "azure", "gcp", "cloud",
-                "docker", "kubernetes", "serverless",
-                "microservices", "devops", "ci/cd"
+                "aws", "azure", "gcp", "cloud", "docker", "kubernetes",
+                "serverless", "microservices", "devops", "ci/cd"
             ],
             "databases": [
-                "sql", "mysql", "postgresql",
-                "mongodb", "redis", "elasticsearch",
-                "cassandra", "dynamodb", "oracle"
+                "sql", "mysql", "postgresql", "mongodb", "redis",
+                "elasticsearch", "cassandra", "dynamodb", "oracle"
             ],
             "soft_skills": [
-                "leadership", "communication",
-                "teamwork", "analytical", "agile",
-                "project management", "scrum",
-                "problem solving"
+                "leadership", "communication", "teamwork", "analytical",
+                "agile", "project management", "scrum", "problem solving"
             ]
         }
 
@@ -109,20 +152,29 @@ class KeywordMatcher:
         try:
             scores = {}
             resume_lower = resume_text.lower()
+            job_lower = job_description.lower()
 
             # Find all skills mentioned in job description
-            for category, skills in self.skill_patterns.items():
+            for _, skills in self.skill_patterns.items():
                 for skill in skills:
-                    if skill in job_description.lower():
-                        # Calculate match score
-                        # 1.0 if found in resume, 0.0 if not
-                        scores[skill] = 1.0 if skill in resume_lower else 0.0
+                    pattern = rf"\b{re.escape(skill)}\b"
+                    if re.search(pattern, job_lower):
+                        has_skill = re.search(pattern, resume_lower)
+                        scores[skill] = 1.0 if has_skill else 0.0
+
+            # Add architecture as a special case
+            arch_pattern = r"\b(architect|architecture)\b"
+            if re.search(arch_pattern, job_lower):
+                has_arch = re.search(arch_pattern, resume_lower)
+                scores["Architecture"] = 1.0 if has_arch else 0.0
 
             return scores
 
         except Exception as e:
-            logger.error(f"Error matching skills: {str(e)}")
-            raise ProcessingError(f"Failed to match skills: {str(e)}")
+            logger.error("Error matching skills: %s", str(e))
+            raise ProcessingError(
+                f"Failed to match skills: {str(e)}"
+            ) from e
 
 
 class SkillExtractor:
@@ -141,25 +193,78 @@ class SkillExtractor:
     def extract_skills(self, text: str) -> Dict[str, Set[str]]:
         """Extract and categorize skills from text."""
         try:
+            if not text or not text.strip():
+                return {
+                    "technical": set(),
+                    "soft": set(),
+                    "domain": set(),
+                    "tools": set()
+                }
+
             text_lower = text.lower()
+            results = {
+                "technical": set(),
+                "soft": set(),
+                "domain": set(),
+                "tools": set()
+            }
 
             # Extract skills by category
             for category, patterns in self.matcher.skill_patterns.items():
                 for pattern in patterns:
-                    if pattern in text_lower:
+                    # Use word boundaries for exact matches
+                    pattern_re = rf"\b{re.escape(pattern)}\b"
+                    if re.search(pattern_re, text_lower):
                         if category == "soft_skills":
-                            self.categories["soft"].add(pattern)
+                            results["soft"].add(pattern)
+                        elif category in {
+                            "programming",
+                            "frameworks",
+                            "cloud",
+                            "databases"
+                        }:
+                            results["technical"].add(pattern)
                         else:
-                            self.categories["technical"].add(pattern)
+                            results["tools"].add(pattern)
 
-            # Look for domain and tool keywords
-            if re.search(r"\b(industry|domain|sector)\b", text_lower):
-                self.categories["domain"].add("domain expertise")
-            if re.search(r"\b(tool|platform|software)\b", text_lower):
-                self.categories["tools"].add("tools")
+            # Add Python variations
+            python_patterns = [
+                r"\bpython\d*\b",
+                r"\bpy\d+\b",
+                r"\.py\b",
+                r"\bdjango\b",
+                r"\bflask\b",
+                r"\bfastapi\b"
+            ]
+            if any(re.search(p, text_lower) for p in python_patterns):
+                results["technical"].add("python")
 
-            return self.categories
+            # Domain expertise detection
+            domain_patterns = [
+                r"\bindustry\b",
+                r"\bdomain\b",
+                r"\bsector\b",
+                r"\bexpertise\b",
+                r"\bspecialization\b"
+            ]
+            if any(re.search(p, text_lower) for p in domain_patterns):
+                results["domain"].add("domain expertise")
+
+            # Tool detection
+            tool_patterns = [
+                r"\btool\b",
+                r"\bplatform\b",
+                r"\bsoftware\b",
+                r"\bsuite\b",
+                r"\bsystem\b"
+            ]
+            if any(re.search(p, text_lower) for p in tool_patterns):
+                results["tools"].add("tools")
+
+            return results
 
         except Exception as e:
-            logger.error(f"Error extracting skills: {str(e)}")
-            raise ProcessingError(f"Failed to extract skills: {str(e)}")
+            logger.error("Error extracting skills: %s", str(e))
+            raise ProcessingError(
+                f"Failed to extract skills: {str(e)}"
+            ) from e

@@ -1,9 +1,11 @@
 """Job board integration for resume tailoring app."""
 import logging
 import time
-from typing import Dict, List
+from typing import Dict, List, Optional
+from dataclasses import dataclass
 import requests
 from bs4 import BeautifulSoup
+from bs4.element import Tag
 from urllib.parse import urlparse
 from src.exceptions import JobBoardError
 
@@ -11,21 +13,36 @@ from src.exceptions import JobBoardError
 logger = logging.getLogger(__name__)
 
 
-class JobBoardScraper:
-    """Enhanced job board integration with multiple site support and robust
-    error handling."""
+@dataclass
+class JobDetails:
+    """Container for job posting details."""
+    title: str
+    company: str
+    location: str
+    description: str
+    requirements: List[str]
+    responsibilities: List[str]
+    qualifications: List[str]
 
-    def __init__(self) -> None:
-        """Initialize with supported job boards."""
-        self.scrapers: Dict[str, JobScraper] = {
-            'seek': SeekScraper(),
-            'indeed': IndeedScraper(),
-            'linkedin': LinkedInScraper()
+
+class JobBoardManager:
+    """Manager for job board integrations."""
+
+    def __init__(self):
+        """Initialize with supported scrapers."""
+        self.scrapers: Dict[str, 'SeekScraper'] = {
+            'seek': SeekScraper()
         }
         self.max_retries = 3
         self.retry_delay = 1  # seconds
 
-    def fetch_job_description(self, url: str) -> str:
+    def is_supported_url(self, url: str) -> bool:
+        """Check if URL is supported."""
+        return any(
+            scraper.can_handle(url) for scraper in self.scrapers.values()
+        )
+
+    def fetch_job_details(self, url: str) -> Optional[JobDetails]:
         """Fetch job description with automatic site detection and retry
         logic."""
         try:
@@ -86,11 +103,11 @@ class JobBoardScraper:
         return list(self.scrapers.keys())
 
 
-class JobScraper:
-    """Base class for job board scrapers."""
+class SeekScraper:
+    """Scraper for Seek job postings."""
 
     def __init__(self):
-        """Initialize with common headers."""
+        """Initialize scraper."""
         self.headers = {
             'User-Agent': (
                 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
@@ -100,12 +117,87 @@ class JobScraper:
         }
 
     def can_handle(self, url: str) -> bool:
-        """Check if scraper can handle this URL."""
-        raise NotImplementedError
+        """Check if URL is from Seek."""
+        return 'seek.com.au' in url.lower()
 
-    def fetch(self, url: str) -> str:
-        """Fetch and parse job description."""
-        raise NotImplementedError
+    def fetch(self, url: str) -> Optional[JobDetails]:
+        """Fetch and parse Seek job posting."""
+        try:
+            response = requests.get(url, headers=self.headers)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            # Extract job details
+            h1 = soup.find('h1')
+            title = h1.text.strip() if h1 else "Unknown Title"
+
+            company_link = soup.find(
+                'a', {'data-automation': 'company-link'}
+            )
+            company = (
+                company_link.text.strip()
+                if company_link
+                else "Unknown Company"
+            )
+
+            location_span = soup.find(
+                'span', {'data-automation': 'job-location'}
+            )
+            location = (
+                location_span.text.strip()
+                if location_span
+                else "Unknown Location"
+            )
+
+            # Get job description
+            description_div = soup.find(
+                'div', {'data-automation': 'jobAdDetails'}
+            )
+            if not description_div:
+                return None
+
+            description = description_div.get_text('\n', strip=True)
+
+            # Extract lists
+            requirements = []
+            responsibilities = []
+            qualifications = []
+
+            # Find all lists in the description
+            lists: List[Tag] = []
+            if hasattr(description_div, 'find_all'):
+                find = description_div.find_all
+                lists.extend(find('ul'))
+                for ul in lists:
+                    if hasattr(ul, 'find_all'):
+                        items = [
+                            li.text.strip()
+                            for li in ul.find_all('li')
+                        ]
+                        # Categorize based on preceding header
+                        prev = ul.find_previous(['h2', 'h3', 'strong'])
+                        if prev and hasattr(prev, 'text'):
+                            header = prev.text.lower()
+                            if 'requirement' in header:
+                                requirements.extend(items)
+                            elif 'responsibilit' in header:
+                                responsibilities.extend(items)
+                            elif 'qualification' in header:
+                                qualifications.extend(items)
+
+            return JobDetails(
+                title=title,
+                company=company,
+                location=location,
+                description=description,
+                requirements=requirements,
+                responsibilities=responsibilities,
+                qualifications=qualifications
+            )
+
+        except Exception as e:
+            logger.error(f"Error fetching job details: {str(e)}")
+            return None
 
     def _log_html_preview(self, html: str) -> None:
         """Log a preview of HTML content in chunks."""
@@ -195,252 +287,3 @@ class JobScraper:
                 )
                 logger.error(f"Response headers: {e.response.headers}")
             raise JobBoardError(f"Failed to fetch job posting: {str(e)}")
-
-
-class SeekScraper(JobScraper):
-    """Scraper for Seek.com.au job postings."""
-
-    def can_handle(self, url: str) -> bool:
-        """Check if URL is from Seek."""
-        return 'seek.com.au' in url.lower()
-
-    def fetch(self, url: str) -> str:
-        """Fetch and parse Seek job description."""
-        html = self._make_request(url)
-        soup = BeautifulSoup(html, 'html.parser')
-
-        # Try finding job description in modern Seek layout
-        job_desc = None
-
-        # Try to find the job description in the modern Seek layout
-        # First look for the main job details container
-        main_container = soup.find('div', {'data-automation': 'jobAdDetails'})
-        if not main_container:
-            main_container = soup.find(
-                'div', {'data-automation': 'job-details'}
-            )
-
-        if main_container and hasattr(main_container, 'find_all'):
-            # Look for specific sections within the container
-            sections = main_container.find_all(
-                ['div', 'section', 'article'],
-                recursive=False
-            )
-
-            # Try to find the description section
-            for section in sections:
-                # Check various attributes for description indicators
-                attrs = []
-                if hasattr(section, 'get'):
-                    attrs.extend(section.get('class', []))
-                    attrs.append(section.get('id', ''))
-                    attrs.append(section.get('data-automation', ''))
-
-                attrs_text = ' '.join(str(attr) for attr in attrs).lower()
-                if any(
-                    text in attrs_text
-                    for text in [
-                        'description', 'details', 'about',
-                        'job-ad-details', 'jobaddetails'
-                    ]
-                ):
-                    job_desc = section
-                    break
-
-        # Fallback to traditional selectors
-        if not job_desc:
-            selectors = [
-                {'data-automation': 'jobDescription'},
-                {'data-automation': 'job-description'},
-                {'data-automation': 'job-details'},
-                {'class': 'job-description'},
-                {'class': 'jobDescription'},
-                {'class': 'job-details'},
-                {'class': 'description'},
-                {'id': 'job-description'},
-                {'id': 'jobDescription'},
-                {'id': 'job-details'}
-            ]
-
-            for selector in selectors:
-                job_desc = soup.find(['div', 'section'], selector)
-                if job_desc:
-                    break
-
-        # Log debug info
-        logger.debug("HTML structure:")
-        for tag in soup.find_all(['article', 'div', 'section'])[:5]:
-            logger.debug(
-                "Tag: %s, Class: %s, ID: %s, Data: %s",
-                tag.name,
-                tag.get('class', ''),
-                tag.get('id', ''),
-                tag.get('data-automation', '')
-            )
-
-        if not job_desc:
-            # Try finding any div with "job" and "description" in class/id
-            job_desc = soup.find(
-                lambda tag: tag.name == 'div' and any(
-                    'job' in attr and 'description' in attr
-                    for attr in [
-                        tag.get('class', ''),
-                        tag.get('id', ''),
-                        tag.get('data-automation', '')
-                    ]
-                )
-            )
-
-        if not job_desc:
-            raise JobBoardError("Could not find job description")
-
-        # Extract and clean text
-        description = job_desc.get_text(separator='\n', strip=True)
-
-        # Basic validation
-        if len(description) < 50:  # Arbitrary minimum length
-            raise JobBoardError("Job description seems too short")
-        return description
-
-
-class IndeedScraper(JobScraper):
-    """Scraper for Indeed job postings."""
-
-    def can_handle(self, url: str) -> bool:
-        """Check if URL is from Indeed."""
-        return 'indeed.com' in url.lower()
-
-    def fetch(self, url: str) -> str:
-        """Fetch and parse Indeed job description."""
-        html = self._make_request(url)
-        soup = BeautifulSoup(html, 'html.parser')
-
-        # Try multiple possible selectors
-        selectors = [
-            {'id': 'jobDescriptionText'},
-            {'class': 'jobsearch-jobDescriptionText'},
-            {'id': 'job-description'},
-            {'class': 'job-desc'},
-            {'class': 'description'}
-        ]
-
-        job_desc = None
-        for selector in selectors:
-            job_desc = soup.find('div', selector)
-            if job_desc:
-                break
-
-        if not job_desc:
-            # Try finding any div with "job" and "description" in class/id
-            job_desc = soup.find(
-                lambda tag: tag.name == 'div' and any(
-                    'job' in attr and 'description' in attr
-                    for attr in [
-                        tag.get('class', ''),
-                        tag.get('id', '')
-                    ]
-                )
-            )
-
-        if not job_desc:
-            raise JobBoardError("Could not find job description")
-
-        # Extract and clean text
-        description = job_desc.get_text(separator='\n', strip=True)
-
-        # Basic validation
-        if len(description) < 50:  # Arbitrary minimum length
-            raise JobBoardError("Job description seems too short")
-        return description
-
-
-class LinkedInScraper(JobScraper):
-    """Scraper for LinkedIn job postings."""
-
-    def can_handle(self, url: str) -> bool:
-        """Check if URL is from LinkedIn."""
-        return 'linkedin.com' in url.lower()
-
-    def fetch(self, url: str) -> str:
-        """Fetch and parse LinkedIn job description."""
-        html = self._make_request(url)
-        soup = BeautifulSoup(html, 'html.parser')
-
-        # Try multiple possible selectors
-        selectors = [
-            {'class': 'description__text'},
-            {'class': 'show-more-less-html__markup'},
-            {'class': 'job-description'},
-            {'class': 'description'},
-            {'class': 'job-details'}
-        ]
-
-        job_desc = None
-        for selector in selectors:
-            job_desc = soup.find('div', selector)
-            if job_desc:
-                break
-
-        if not job_desc:
-            # Try finding any div with "job" and "description" in class/id
-            job_desc = soup.find(
-                lambda tag: tag.name == 'div' and any(
-                    'job' in attr and 'description' in attr
-                    for attr in [
-                        tag.get('class', ''),
-                        tag.get('id', '')
-                    ]
-                )
-            )
-
-        if not job_desc:
-            raise JobBoardError("Could not find job description")
-
-        # Extract and clean text
-        description = job_desc.get_text(separator='\n', strip=True)
-
-        # Basic validation
-        if len(description) < 50:  # Arbitrary minimum length
-            raise JobBoardError("Job description seems too short")
-        return description
-
-
-def extract_job_requirements(description: str) -> Dict[str, list[str]]:
-    """Extract structured requirements from job description."""
-    try:
-        requirements: Dict[str, list[str]] = {
-            'skills': [],
-            'experience': [],
-            'education': [],
-            'responsibilities': []
-        }
-
-        # Split into sections
-        sections = description.lower().split('\n')
-        current_section = None
-
-        for line in sections:
-            line = line.strip()
-            if not line:
-                continue
-
-            # Detect section headers
-            if 'requirements' in line or 'skills' in line:
-                current_section = 'skills'
-            elif 'experience' in line:
-                current_section = 'experience'
-            elif 'education' in line or 'qualification' in line:
-                current_section = 'education'
-            elif 'responsibilities' in line or 'duties' in line:
-                current_section = 'responsibilities'
-            elif line.startswith('•') or line.startswith('-'):
-                if current_section:
-                    requirements[current_section].append(
-                        line.lstrip('•- ').strip()
-                    )
-
-        return requirements
-
-    except Exception as e:
-        logger.error(f"Error extracting requirements: {str(e)}")
-        return requirements

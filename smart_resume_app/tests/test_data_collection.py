@@ -64,10 +64,10 @@ def test_pii_detection(pii_detector, sample_resume_text):
     assert isinstance(pii, PIIData)
     assert "John Smith" in pii.names
     assert "john.smith@example.com" in pii.emails
-    assert any("555" in phone for phone in pii.phones)
+    assert "+1 (555) 123-4567" in pii.phones
     assert "Melbourne" in pii.locations
     assert "Microsoft" in pii.organizations
-    assert any("2020" in date for date in pii.dates)
+    assert "Jan 2020" in pii.dates
 
 
 def test_pii_tokenization(tokenizer, pii_detector, sample_resume_text):
@@ -98,14 +98,14 @@ def test_data_collection(temp_jsonl, sample_resume_text, sample_job_text):
     # Verify saved data
     with open(temp_jsonl) as f:
         data = json.loads(f.readline())
-        assert "resume" in data
-        assert "job_description" in data
-        assert "tailored_resume" in data
+        assert "prompt" in data
+        assert "completion" in data
+        assert "metadata" in data
         assert data["metadata"]["model"] == "gpt-4"
         
         # Verify PII was anonymized
-        assert "John Smith" not in data["resume"]
-        assert "[NAME]" in data["resume"]
+        assert "John Smith" not in data["prompt"]
+        assert "[NAME]" in data["prompt"]
 
 
 def test_data_retention(temp_jsonl):
@@ -170,7 +170,7 @@ def test_pii_detection_edge_cases(pii_detector):
     pii = pii_detector.detect(text)
     assert any("Smith" in name for name in pii.names)
     assert "user+test@sub.example.com" in pii.emails
-    assert any("555" in phone for phone in pii.phones)
+    assert "1.555.123.4567" in pii.phones
 
 
 def test_data_collector_error_handling(temp_jsonl):
@@ -193,14 +193,15 @@ def test_data_collector_error_handling(temp_jsonl):
 
 
 @patch('spacy.load')
-def test_spacy_model_loading(mock_load, pii_detector):
+def test_spacy_model_loading(mock_load):
     """Test spaCy model loading behavior."""
     # Test successful model loading
     mock_load.return_value = Mock()
     PIIDetector()  # Create instance to trigger model loading
     mock_load.assert_called_once_with('en_core_web_sm')
     
-    # Test model download fallback
+    # Reset mock for testing model download fallback
+    mock_load.reset_mock()
     mock_load.side_effect = [OSError, Mock()]
     PIIDetector()  # Create instance to trigger model loading
-    assert mock_load.call_count == 2
+    assert mock_load.call_count == 2  # One failed attempt + one successful attempt

@@ -9,10 +9,10 @@ from src.config import Config
 def mock_config():
     """Create mock configuration."""
     config = Mock(spec=Config)
-    config.get.side_effect = {
-        'OPENAI_API_KEY': 'test-openai-key',
+    config.get.side_effect = lambda x: {
+        'OPENAI_API_KEY': 'sk-test-openai-key',
         'ANTHROPIC_API_KEY': 'test-anthropic-key'
-    }.get
+    }.get(x)
     return config
 
 

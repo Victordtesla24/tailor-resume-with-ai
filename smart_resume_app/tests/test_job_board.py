@@ -149,10 +149,10 @@ def test_job_board_manager_fetch(mock_get, mock_response):
     assert job_details.title == "Solution Architect"
     
     # Test unsupported URL
-    result = manager.fetch_job_details(
-        "https://example.com/job/12345"
-    )
-    assert result is None
+    with pytest.raises(Exception):
+        manager.fetch_job_details(
+            "https://example.com/job/12345"
+        )
 
 
 def test_job_details_extraction_edge_cases(seek_scraper):
