@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools>=69.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smart_resume_app"
+version = "0.1.0"
+description = "A smart resume analysis and tailoring tool"
+authors = [
+    {name = "Vic D", email = "melbvicduque@gmail.com"},
+]
+requires-python = ">=3.8"
+keywords = ["resume", "ai", "nlp", "job search"]
+dependencies = [
+    "pytest>=8.0.0",
+    "pylint>=3.0.0",
+    "nltk>=3.8.1",
+    "python-docx>=1.0.0",
+    "requests>=2.31.0",
+    "openai>=1.12.0",
+    "anthropic>=0.18.0",
+    "beautifulsoup4>=4.12.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=24.0.0",
+    "isort>=5.13.0",
+    "mypy>=1.8.0",
+]
+
+[project.scripts]
+smart-resume = "smart_resume_app.src.cli:main"
+
+[tool.pytest.ini_options]
+pythonpath = [
+    ".",
+    "smart_resume_app"
+]
+testpaths = [
+    "tests"
+]
+norecursedirs = [
+    ".venv",
+    "venv",
+    ".env",
+    "env",
+    ".tox",
+    "*.egg",
+    "*.egg-info"
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py38']
+include = '\.pyi?$'
+exclude = '''
+(
+    \.eggs
+    | \.git
+    | \.venv
+    | venv
+    | env
+    | \.env
+    | \.tox
+    | build
+    | dist
+    | .*\.egg-info
+)
+'''

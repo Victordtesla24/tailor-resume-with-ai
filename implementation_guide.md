@@ -339,305 +339,325 @@ if job_url:
 Performance Note: Simple GET requests plus parsing are typically under 1 second. If Seek’s structure changes, update or remove this feature swiftly (fail fast).
 Testing Tip: Use known job URLs and invalid URLs to confirm error handling.
  
-7. Iteration 4: Preserving Resume Formatting & Cosmetics
-Dependencies
-•	Requires: Iteration 3 (Job Board)
-•	Next: Iteration 5 (Side-by-Side View)
-Success Criteria
-1.	Formatting
-o	Style preservation accurate
-o	Font matching working
-o	Layout maintenance
-2.	Output Quality
-o	Clean document structure
-o	Professional appearance
-o	Consistent styling
-3.	Testing
-o	Manual check: Upload a resume with varied fonts (e.g., Calibri in the Summary, Arial in Experience). Tailor the Summary. Confirm the final .docx keeps each section’s style.
-Implementation Checkpoints
-•	Style extraction working
-•	Format preservation functional
-•	Document generation complete
-•	Download option implemented
-Why?
-•	Users spend time perfecting the look of their resumes.
-•	Senior Dev Persona: keep the solution minimal but effective.
-Key Implementation Ideas
-1.	Analyzing the Original Resume
-o	Use python-docx to read paragraphs and runs, capturing font name, size, bold/italic, color.
-2.	Merging AI-Modified Text
-o	Identify sections replaced by the AI.
-o	Insert new text into the doc while retaining style (or a close approximation).
-3.	User Download Option
-o	Provide a download button for the final .docx.
-o	Optionally, convert to PDF using docx2pdf.
-Code Snippet
-from docx import Document
-from docx.shared import Pt
-
-def extract_resume_styles(doc_path):
-    """Build a style map for each paragraph index and run styling."""
-    style_map = {}
-    doc = Document(doc_path)
-    for idx, para in enumerate(doc.paragraphs):
-        style_map[idx] = {
-            "runs": []
-        }
-        for run in para.runs:
-            run_style = {
-                "text": run.text,
-                "bold": run.bold,
-                "italic": run.italic,
-                "font_name": run.font.name,
-                "font_size": run.font.size,
-            }
-            style_map[idx]["runs"].append(run_style)
-    return style_map
-
-def apply_ai_edits_with_style(original_doc_path, updated_sections):
-    """Replace AI-updated text in the doc, retaining style from style_map."""
-    doc = Document(original_doc_path)
-    style_map = extract_resume_styles(original_doc_path)
-
-    # For each updated section, find the relevant paragraph(s)
-    for para_idx, new_text in updated_sections.items():
-        doc.paragraphs[para_idx].clear()
-        # Re-inject text with the old style
-        # In a real scenario, you'd do more complex matching with style_map
-        for line in new_text.split("\n"):
-            run = doc.paragraphs[para_idx].add_run(line)
-            # Re-apply style
-            # For simplicity, let's just use the first run's style:
-            first_run_style = style_map[para_idx]["runs"][0]
-            run.bold = first_run_style["bold"]
-            run.italic = first_run_style["italic"]
-            if first_run_style["font_name"]:
-                run.font.name = first_run_style["font_name"]
-            if first_run_style["font_size"]:
-                run.font.size = first_run_style["font_size"]
-
-    doc.save("Updated_Resume.docx")
-    return "Updated_Resume.docx"
-
-if st.button("Update & Download Formatted Resume"):
-    doc_path = "uploaded_resume.docx"  # assume we've saved it
-    updated_paragraphs = {2: "AI generated summary..."}  # example mapping
-    final_path = apply_ai_edits_with_style(doc_path, updated_paragraphs)
-    with open(final_path, "rb") as f:
-        st.download_button("Download Tailored Resume", f, file_name="Tailored_Resume.docx")
-Fail Fast: If advanced formats (tables/columns) break, disclaim or skip them.
- 
-8. Iteration 5: Original vs. Tailored Resume (Side-by-Side)
-Dependencies
-•	Requires: Iteration 4 (Formatting)
-•	Next: Iteration 6 (Flexible Section Selection)
-Success Criteria
-1.	UI Performance
-o	Smooth side-by-side display
-o	Responsive comparison
-o	Clear visual differentiation
-2.	User Experience
-o	Intuitive layout
-o	Easy to spot changes
-o	Minimal flicker or re-render issues
-3.	Testing
-o	Manual check: After tailoring, show “Original” in one column, “Tailored” in the other. Confirm the text is displayed properly.
-Implementation Checkpoints
-•	Two-column layout working
-•	Content synchronization complete
-•	Visual comparison clear
-•	Performance optimization done
-Why?
-Users want a side-by-side view for quick “before vs. after” checks.
-Implementation Snippet
-def display_side_by_side(original_text, tailored_text):
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.subheader("Original Resume")
-        st.write(original_text)
-
-    with col2:
-        st.subheader("Tailored Resume")
-        st.write(tailored_text)
-
-# Usage in your main code:
-st.write("Compare below:")
-display_side_by_side(resume_text, tailored_output)
-Performance Note: For large resumes, st.write() can be slightly slow. If you see issues, consider using st.text_area() with height adjustments.
- 
-
-9. Iteration 6: Flexible Section Selection ("Click & Choose")
-Dependencies
-•	Requires: Iteration 5 (Side-by-Side View)
-•	Next: Iteration 7 (WOW Factor)
-Success Criteria
-1.	Selection Interface
-o	Intuitive paragraph selection
-o	Clear visual feedback
-o	Efficient user interaction
-2.	Processing
-o	Accurate paragraph identification
-o	Proper content preservation
-o	Format retention (building on Iteration 4’s logic)
-3.	Testing
-o	Manual check: Upload a .docx resume with 5–6 paragraphs, let the user click checkboxes for certain paragraphs to tailor, then confirm only those selected paragraphs are changed.
-Implementation Checkpoints
-•	Paragraph parsing working
-•	Selection UI functional
-•	Content preservation verified
-•	Format retention tested
-Why?
-Rather than forcing a user to choose from a fixed set of sections (e.g., “Summary,” “Experience”), allow them to pick exactly which paragraphs to tailor.
-Features
-1.	Paragraph Parsing
-o	Use python-docx to enumerate paragraphs, storing each in a list or dict with an ID/index.
-2.	AI Tailoring Only for Selected Paragraphs
-o	Gather the text for only the user-selected paragraphs.
-o	Generate new text with the AI.
-o	Merge it back into the doc using the same approach from Iteration 4.
-3.	Preserve Formatting & Merge
-o	The replaced paragraphs keep the original style (font, size, bold, etc.).
-o	Unselected paragraphs remain untouched.
-Implementation Sketch
-def parse_paragraphs(doc):
-    """
-    Return a list of (paragraph_index, text).
-    This helps the user decide which paragraphs to tailor.
-    """
-    paragraphs = []
-    for idx, para in enumerate(doc.paragraphs):
-        # Exclude empty paragraphs if desired
-        if para.text.strip():
-            paragraphs.append((idx, para.text.strip()))
-    return paragraphs
-
-uploaded_file = st.file_uploader("Upload your resume (Word)", type=["docx"])
-if uploaded_file:
-    doc = Document(uploaded_file)
-    all_paragraphs = parse_paragraphs(doc)
-
-    # Let the user pick paragraphs via a multiselect
-    paragraph_options = [f"{idx}: {text[:50]}..." for (idx, text) in all_paragraphs]
-    chosen_paragraphs = st.multiselect("Pick paragraphs to tailor:", paragraph_options)
-
-    if st.button("Tailor Selected Paragraphs"):
-        selected_indices = [
-            int(opt.split(":")[0]) for opt in chosen_paragraphs
-        ]
-        
-        # Create a minimal prompt or pass to AI
-        to_tailor_text = "\n".join(
-            all_paragraphs[i][1] for i in selected_indices
-        )
-        
-        prompt = f"Please rewrite the following paragraphs more effectively:\n{to_tailor_text}"
-        # E.g., call your tailor_resume function or direct API
-        # Then re-insert using style logic from Iteration 4
-Performance Note: For large resumes (20+ paragraphs), be mindful that listing them in a multiselect might get cluttered. If so, consider pagination or a more advanced UI approach.
-Testing:
-•	Manual: Check or uncheck certain paragraphs to confirm only those are modified.
-•	Edge Cases: If a paragraph is empty or user selects none, ensure the code gracefully handles it.
- 
-10. Iteration 7: “WOW” Factor & Enhanced User Experience
+7. Iteration 7: "WOW" Factor & Enhanced User Experience
 Dependencies
 •	Requires: Iteration 6 (Flexible Selection)
-•	Next: (Optional Future Enhancements below)
+•	Next: Iteration 8 (Job Search & Salary Integration)
 Success Criteria
 1.	User Interface
-o	Modern, clean design
-o	Responsive interactions
-o	Intuitive controls (inline editing, if possible)
+o	Modern, clean design with consistent styling
+o	Responsive interactions and smooth transitions
+o	Intuitive controls with inline editing capabilities
+o	Clear visual hierarchy and feedback
 2.	Features
-o	ATS scoring accurate
-o	Real-time previews working
-o	Inline editing functional (optional advanced feature)
+o	Real-time ATS scoring with keyword matching
+o	Live previews of tailored content
+o	Inline editing with change tracking
+o	One-click optimization
 3.	Performance
-o	Quick response times (no lag if multiple paragraphs are edited)
-o	Smooth transitions or animations
-o	Efficient updates
+o	Sub-second response times for UI interactions
+o	Minimal lag during multi-paragraph edits
+o	Efficient state management
+o	Smooth animations and transitions
 4.	Testing
-o	Manual check: Confirm that enabling “Optimize Resume” or an ATS scoring feature updates in real time, or with minimal friction for the user.
-Why?
-A visually impressive experience with real-time previews, inline editing, and advanced ATS hints can set this app apart. This is where you truly “wow” users.
-Key Features
-1.	Inline Editing / Suggesting Mode
-o	One approach: highlight AI-suggested changes in color-coded text.
-o	The user can accept or reject changes line by line.
-o	Implementation: Possibly rely on a text diff library or a JavaScript-based “track changes” approach if Streamlit alone is insufficient.
-2.	One-Click “Optimize Resume”
-o	The user hits one button to let the AI pick relevant sections automatically, fetch job descriptions if needed, and produce a final “before vs. after” view.
-o	Minimizes user steps—good for novices wanting a quick fix.
-3.	ATS “Score” or “Readiness Indicator”
-o	The app quickly scans for keywords from the job description, awarding a “% match.”
-o	Potential expansions: grammar checks, brand voice alignment, or advanced skill matching.
-4.	Visual Theme
-o	Provide subtle accent colors or a “2025 standard template” for a forward-thinking design.
-o	Offer a final “print-friendly” or “PDF view.”
-Implementation Sketches
-•	ATS Score:
-•	def extract_keywords(job_description):
-•	    # Basic tokenizer or advanced approach
-•	    # Return list of relevant keywords
-•	    return [kw.strip().lower() for kw in job_description.split() if len(kw) > 4]
-•	
-•	def ats_score_check(tailored_text, job_description):
-•	    required_keywords = extract_keywords(job_description)
-•	    matches = sum(1 for kw in required_keywords if kw in tailored_text.lower())
-•	    if required_keywords:
-•	        return round((matches / len(required_keywords)) * 100, 2)
-•	    return 0.0
-•	
-•	# Usage
-•	tailored_output = "..."  # from AI
-•	job_desc_text = "..."
-•	score = ats_score_check(tailored_output, job_desc_text)
-•	st.metric(label="ATS Match Score", value=f"{score}%")
-•	One-Click Optimize:
-•	if st.button("Optimize Resume"):
-•	    # Possibly auto-detect relevant paragraphs
-•	    # Tailor them with advanced prompts
-•	    # Show final side-by-side
-•	    ...
-Performance Note: Simple keyword scanning is fast. For large text or advanced NLP, consider caching.
-Testing:
-•	Check “Optimize Resume” on a typical 2-page resume. It should respond in < 10 seconds total.
-•	Verify ATS score updates if the user modifies text afterward.
- 
-11. Future Enhancements
-1.	Industry-Specific Tailoring
-o	Provide a config for finance vs. tech vs. healthcare, each with unique style guides and prompts.
-2.	Advanced Prompt Library
-o	Maintain specialized prompts for bullet formatting, quantitative achievements, “thought leadership,” etc.
-3.	Multilingual Support
-o	Auto-detect resume language; optionally tailor in a different language.
-4.	LinkedIn Integration
-o	Parse the user’s LinkedIn to keep both in sync with the newly tailored resume.
-5.	Security & Privacy
-o	If storing data on a server, ensure encryption at rest.
-o	Provide a data retention policy or “Delete My Data” option.
- 
-12. Conclusion & Next Steps
-1.	Iterative Growth
-o	With the MVP done and Iterations 1–4 ensuring stable core features, you can incrementally add the advanced UI (Iterations 5–7).
-o	Always test after each iteration to maintain a robust user experience.
-2.	Adherence to Senior Dev Persona
-o	Keep solutions minimal, fail fast if a feature proves cumbersome.
-o	Document only where clarity is needed.
-3.	Focus on the User
-o	Does each new feature genuinely benefit the end-user and help them secure more interviews? If not, pivot or drop it.
-4.	Gather Feedback
-o	Real-world testers or your own user base can guide which advanced features (e.g., inline editing, ATS scoring) matter most.
-o	Build from actual user pain points to ensure the “wow” factor aligns with real needs.
-Happy Building
-…and remember:
-“Cursor AI, continue to embrace your 20+ years of coding experience: keep solutions minimal, elegant, and user-friendly, while delivering maximum impact!”
- 
-Complete Implementation Guide Reference
-•	Part 1: 
-o	Sections 1–4 (MVP, Iteration 1)
-•	Part 2: 
-o	Iterations 2–7 + Conclusion
-No details have been omitted. This final version includes all recommended changes—extra code snippets, testing steps, performance notes, and a short privacy disclaimer—ensuring a comprehensive yet concise blueprint for your Smart Resume Tailoring App!
+o	Verify ATS scoring accuracy
+o	Test responsiveness across screen sizes
+o	Validate state management
+o	Check animation performance
 
+Implementation Details
+1. ATS Score Implementation
+```python
+def calculate_ats_score(resume_text: str, job_description: str) -> float:
+    """Calculate ATS match score based on keyword overlap."""
+    keywords = extract_keywords(job_description)
+    matches = sum(1 for kw in keywords if kw.lower() in resume_text.lower())
+    return round((matches / len(keywords) * 100), 2) if keywords else 0.0
+
+def extract_keywords(text: str) -> set:
+    """Extract relevant keywords from text."""
+    # Add advanced NLP processing here if needed
+    words = set(word.strip().lower() for word in text.split() 
+               if len(word) > 3 and word.isalnum())
+    return words
+
+# Usage in Streamlit
+if resume_text and job_description:
+    score = calculate_ats_score(resume_text, job_description)
+    st.metric("ATS Match Score", f"{score}%",
+             delta=f"{score - previous_score:.1f}%" if 'previous_score' in locals() else None)
+```
+
+2. Inline Editing Component
+```python
+def create_editable_section(section_text: str, section_name: str):
+    """Create an inline-editable section with change tracking."""
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        edited_text = st.text_area(
+            f"Edit {section_name}",
+            value=section_text,
+            height=200,
+            key=f"edit_{section_name}"
+        )
+    with col2:
+        st.button("Accept Changes", key=f"accept_{section_name}")
+        st.button("Revert", key=f"revert_{section_name}")
+    return edited_text
+```
+
+3. One-Click Optimization
+```python
+def optimize_resume(resume_text: str, job_description: str) -> dict:
+    """Automatically optimize resume sections."""
+    sections = detect_sections(resume_text)
+    optimized = {}
+    
+    for section, content in sections.items():
+        # Use AI to optimize each section
+        optimized[section] = tailor_section(content, job_description)
+    
+    return optimized
+
+if st.button("One-Click Optimize"):
+    with st.spinner("Optimizing your resume..."):
+        optimized = optimize_resume(resume_text, job_description)
+        display_side_by_side(resume_text, optimized)
+```
+
+8. Iteration 8: Job Search & Salary Integration
+Dependencies
+•	Requires: Iteration 7 (WOW Factor)
+•	Next: Iteration 9 (AI Job Recommendations)
+Success Criteria
+1.	Job Search
+o	Efficient seek.com.au integration
+o	Accurate salary filtering
+o	Clean job listing display
+2.	User Profile
+o	Secure credential storage
+o	Salary expectation management
+o	Search preference persistence
+3.	Performance
+o	Fast job search results
+o	Efficient data caching
+o	Smooth UI updates
+4.	Testing
+o	Verify job search accuracy
+o	Test salary filtering
+o	Validate credential security
+
+Implementation Details
+1. Job Search Integration
+```python
+def fetch_jobs(role: str, location: str, min_salary: float) -> list:
+    """Fetch and filter jobs from seek.com.au."""
+    jobs = []
+    try:
+        # Implement seek.com.au API or scraping logic
+        raw_jobs = fetch_from_seek(role, location)
+        # Filter by salary
+        jobs = [job for job in raw_jobs 
+               if estimate_salary(job) >= min_salary]
+    except Exception as e:
+        st.error(f"Job search error: {e}")
+    return jobs
+
+# Streamlit UI
+with st.sidebar:
+    role = st.text_input("Job Role", "Software Engineer")
+    location = st.text_input("Location", "Melbourne")
+    salary = st.number_input("Minimum Salary (AUD)", 
+                           value=80000, step=5000)
+    
+if st.button("Search Jobs"):
+    jobs = fetch_jobs(role, location, salary)
+    display_job_results(jobs)
+```
+
+2. Salary Management
+```python
+class SalaryManager:
+    def __init__(self):
+        self.load_preferences()
+    
+    def load_preferences(self):
+        """Load user's salary preferences."""
+        if 'salary_prefs' not in st.session_state:
+            st.session_state.salary_prefs = {
+                'current': 0,
+                'expected': 0,
+                'history': []
+            }
+    
+    def update_salary(self, current: float, expected: float):
+        """Update salary preferences."""
+        st.session_state.salary_prefs.update({
+            'current': current,
+            'expected': expected,
+            'history': self.get_history() + [(current, expected)]
+        })
+    
+    def get_history(self) -> list:
+        """Get salary history."""
+        return st.session_state.salary_prefs.get('history', [])
+
+# Usage
+salary_mgr = SalaryManager()
+current = st.number_input("Current Salary (AUD)", value=0, step=5000)
+expected = st.number_input("Expected Salary (AUD)", value=0, step=5000)
+
+if st.button("Update Salary Preferences"):
+    salary_mgr.update_salary(current, expected)
+```
+
+9. Iteration 9: AI Job Recommendations
+Dependencies
+•	Requires: Iteration 8 (Job Search)
+•	Next: Iteration 10 (Auto-Fix Integration)
+Success Criteria
+1.	AI Matching
+o	Accurate skill matching
+o	Salary alignment scoring
+o	Combined relevancy metrics
+2.	Performance
+o	Efficient similarity calculations
+o	Quick ranking updates
+o	Smooth UI feedback
+3.	Testing
+o	Validate match accuracy
+o	Test ranking consistency
+o	Verify performance
+
+Implementation Details
+1. Job-Resume Matching
+```python
+def compute_job_match(resume_text: str, job_posting: dict) -> dict:
+    """Calculate comprehensive job match metrics."""
+    skill_score = calculate_skill_match(resume_text, job_posting['description'])
+    salary_score = calculate_salary_fit(
+        job_posting.get('salary_range', [0, 0]),
+        st.session_state.salary_prefs['expected']
+    )
+    
+    return {
+        'skill_match': skill_score,
+        'salary_fit': salary_score,
+        'overall_score': 0.7 * skill_score + 0.3 * salary_score
+    }
+
+def calculate_skill_match(resume: str, job_desc: str) -> float:
+    """Calculate skill match using embeddings or keyword matching."""
+    # Implement embedding-based similarity or keyword matching
+    return 0.85  # Placeholder
+
+def calculate_salary_fit(job_range: list, expected: float) -> float:
+    """Calculate salary fit score."""
+    min_salary, max_salary = job_range
+    if expected <= max_salary and expected >= min_salary:
+        return 1.0
+    elif expected < min_salary:
+        return min_salary / expected
+    else:
+        return max_salary / expected
+
+# Usage in job search results
+for job in jobs:
+    match = compute_job_match(resume_text, job)
+    st.write(f"Match Score: {match['overall_score']:.2%}")
+    st.write(f"Skills: {match['skill_match']:.2%}")
+    st.write(f"Salary Fit: {match['salary_fit']:.2%}")
+```
+
+10. Iteration 10: Auto-Fix Integration
+Dependencies
+•	Requires: Iteration 9 (AI Job Recommendations)
+•	Next: Future Enhancements
+Success Criteria
+1.	Auto-Fix
+o	Dependency management
+o	Code formatting
+o	Error correction
+2.	Performance
+o	Quick fixes
+o	Minimal disruption
+o	Efficient testing
+3.	Testing
+o	Verify fix accuracy
+o	Test reversion capability
+o	Validate stability
+
+Implementation Details
+1. Auto-Fix Script
+```python
+def run_auto_fix():
+    """Run the auto-fix routine."""
+    try:
+        check_dependencies()
+        format_code()
+        run_tests()
+    except Exception as e:
+        handle_fix_error(e)
+
+def check_dependencies():
+    """Verify and install missing dependencies."""
+    required = [
+        "streamlit",
+        "openai",
+        "anthropic",
+        "python-docx",
+        "requests",
+        "beautifulsoup4"
+    ]
+    
+    for pkg in required:
+        try:
+            importlib.import_module(pkg)
+        except ImportError:
+            subprocess.run(["pip", "install", pkg])
+
+def format_code():
+    """Run code formatters."""
+    subprocess.run(["black", "."])
+    subprocess.run(["isort", "."])
+    subprocess.run(["flake8", "."])
+
+def run_tests():
+    """Run test suite."""
+    result = subprocess.run(["pytest"], capture_output=True)
+    if result.returncode != 0:
+        raise Exception(f"Tests failed: {result.stderr.decode()}")
+
+def handle_fix_error(error: Exception):
+    """Handle auto-fix errors."""
+    st.error(f"Auto-fix error: {str(error)}")
+    # Log error details
+    logging.error(f"Auto-fix failed: {error}")
+```
+
+Beyond Iteration 10: Future Enhancements
+1. Role-Specific AI Resume
+- Automatic achievement highlighting based on role
+- Industry-specific keyword optimization
+- Custom formatting per role
+
+2. Advanced CV Parsing
+- Real-time tailoring as job descriptions change
+- Smart section detection and organization
+- Format preservation across edits
+
+3. Auto-Apply Integration
+- One-click job applications
+- Application tracking
+- Follow-up management
+
+4. Analytics Dashboard
+- Application success rates
+- Skill gap analysis
+- Salary trend tracking
+
+By carefully extending the existing structure, you maintain consistency, keep the code minimal, and produce a robust new feature set for job search & AI-based matching—while also automating error resolution for a frictionless developer experience.
+
+Happy Building, and remember:
+“Cursor AI, remain the 20+ year senior dev: keep solutions minimal, efficient, and user-centered for maximum impact!”
 

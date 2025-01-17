@@ -1,0 +1,110 @@
+# System Configuration
+architecture: "arm64-darwin"
+memory_limit: configurable  # Allow memory limit to be adjusted for systems with varying capacities.
+gpu_utilization: "enabled"
+thread_count: auto  # Dynamically adjusts based on workload and system capabilities.
+
+# AI Model Configuration
+model_preferences:
+  primary: "Anthropic Claude 3-5 Sonnet 20241022"
+  fallback: "cline-enhanced"
+
+# Token Management
+token_optimization:
+  max_context: 8000
+  response_limit: 4000
+  cache_strategy: "aggressive"
+  budget_management: "strict"
+
+# Cost Management
+cost_management:
+  strategy: "minimal"
+  budget_control:
+    daily_limit: 1.5  # Adjusted to provide more flexibility in high-usage scenarios while maintaining cost control.
+    cost_per_token: 0.0000010
+
+# Code Generation Rules
+code_generation:
+  style: "minimal"
+  documentation: "essential"
+  testing: "basic"
+  patterns:
+    minimal_code: true
+    performance_first: true
+
+# Quality Standards
+quality:
+  complexity_threshold: "low"
+  lint_level: "low"
+
+# Security
+security:
+  input_validation: "basic"
+  output_sanitization: true
+  workspace_boundary: "cursor/project_management_dashboard"
+
+# Brainstormed Ideas for Improved Rules
+# System Configuration Enhancements
+system_configuration:
+  optimize_threads: true  # Dynamically adjust threads based on load.
+  gpu_boost:
+    enable_dynamic_scaling: true  # Dynamic GPU scaling is beneficial but can introduce latency. Test thoroughly to balance cost savings with performance.
+
+# AI Model Configuration Enhancements
+ai_model:
+  model_selection:
+    automatic_switch:
+      threshold: "accuracy-focused"  # Switch to fallback only on accuracy degradation.
+  model_combinations:
+    enable_hybrid_output: true  # Blend primary and fallback results for best accuracy. Hybrid output blending may increase processing time. Monitor its impact on both performance and user experience.
+
+# Token Management Enhancements
+token_management:
+  cache_strategy: "smart"  # Leverage prior results for repetitive requests.
+  response_optimization:
+    enable_summarization: true  # Summarize large context interactions when appropriate.
+
+# Cost Management Enhancements
+cost_saving:
+  token_compression: "active"  # Token size dynamically compressed during low-importance tasks. Ensure compression does not compromise the quality of complex outputs.
+  multi-use_cache:
+    prioritize_cache_for: "low-risk operations"  # Cache-heavy operations like formatting.
+
+# Code Generation Enhancements
+code_rules:
+  advanced_patterns:
+    reusable_code_snippets: true  # Store common code snippets for quick generation.
+    pre-tested_snippets:
+      maintain_library: true  # Validate snippets before use.
+  documentation:
+    use_templates: true  # Pre-defined templates for consistent documentation output.
+  testing:
+    coverage: "moderate"  # Add intermediate-level testing for critical tasks.
+
+# Quality Enhancements
+quality_rules:
+  enforce_best_practices:
+    auto_correction: true  # Automatically correct coding errors based on best practices.
+  adaptive_linting:
+    mode: "project-specific"  # Adjust linting levels based on project requirements.
+
+# Security Enhancements
+security_features:
+  validation_rules:
+    dynamic_scaling: true  # Scale validation based on task criticality.
+  output_sanitization:
+    strict_mode: true  # Enforce high-level sanitization for sensitive output.
+
+# Additional Cost-Saving Ideas
+cost_ideas:
+  user_behavior_tracking:
+    analyze_usage_patterns: true  # Optimize costs by identifying high-cost user behaviors.
+  request_bundling:
+    enable_group_requests: true  # Combine multiple small requests into single large calls.
+
+# Additional Productivity Ideas
+productivity:
+  enhance_context_management:
+    persistent_workspace_memory: true  # Retain workspace state across sessions.
+  interactive_feedback:
+    enable_user_prompts: true  # Allow users to refine queries in real-time.
