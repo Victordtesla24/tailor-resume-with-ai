@@ -26,4 +26,4 @@ jobs:
     - name: Download spacy model
       run: python -m spacy download en_core_web_sm
     - name: Run tests
-      #run: pytest
+      run: pytest
