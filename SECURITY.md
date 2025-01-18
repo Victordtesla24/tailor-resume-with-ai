@@ -16,6 +16,7 @@ We take the security of our project seriously. If you believe you have found a s
 1. **Do Not** report security vulnerabilities through public GitHub issues.
 
 2. Instead, please send an email to [security@example.com] with:
+
    - A description of the issue
    - Steps to reproduce the vulnerability
    - Possible impacts of the vulnerability

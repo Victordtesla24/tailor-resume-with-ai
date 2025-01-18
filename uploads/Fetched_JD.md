@@ -1,120 +1,95 @@
-Position: Solution Architect
-Bank First was born by making a BOLD move. Now, we're on a mission to make more BOLD moves as we transform and grow.
-We are proud to provide our community of educators and health-care workers with a bank that puts them first, because they put others first. We're committed to building a unique bank—one that’s different, sustainable, and centered around our Members.
-Join us in breaking the mould and shaping the future of banking. We’re looking for innovative and creative minds ready to make a real impact.
-So, what’s the role?
-We’re seeking a dynamic Solution Architect for a 12-month period to support our transformation journey. You’ll play a critical role in designing and implementing innovative technology solutions to enable our bold ambitions.
-In a typical week you will get involved with:
-• Governing a range of project initiatives, ensuring alignment with strategic goals from requirement analysis to operational handover.
-• Understand and own the documentation of the architecture current state.
-• Lead and work with other experts to nail functional coverage, integration, hosting, data, and security.
-• Partner with the Principal Architect to continuously improve the architecture practice at Bank First, driving best practice.
-This is a 12-month fixed term opportunity, with the possibility of a permanent role down the track.
-About you
-You’re the kind of person that everyone goes to because you ask great questions to understand the needs and provide pragmatic solutions. You’re a big picture thinker and know when to dive into the detail. You thrive on solving complex problems and can understand business priorities.
-You will come equipped with:
-• A bachelor’s degree in computer science, information technology or related field.
-• Proven experience as a Solution Architect (5 years of more) in a fast-paced environment preferably within financial services.
-• Experienced in cloud transformation, SaaS adoption and defining and implementing solutions that meet business needs and timeframes.
-• Domain expertise in multiple areas of architecture including application, information, integration, process, security and infrastructure.
-Why join us?
-• For-purpose, a bank committed to helping its Members and their community.
-• Impactful work that will genuinely make a difference to the lives of our Members.
-• Work with values-driven leaders, who actively develop talent and support you to grow your career. In an inclusive environment where you are empowered to Be Bold. Be Different. Be Sustainable. Be YOU!
-• Work-life balance and flexibility, so you can work in a way that best suits you and supports your commitments outside of work. Family friendly parental leave, and paid superannuation up to 52 weeks.
-• Hybrid working from our state-of-the-art offices to connect and collaborate, as well as focused time at home.
-• Competitive remuneration with an additional one week ‘Be You’ leave, ‘Be Well’ wellbeing benefit, #BFF Club home loan offer, discounted insurance and free on-site parking.
-To apply
-If you are looking for purpose and an organisation that truly lives their values every day, we encourage you to apply. Likewise, if you tick many but not all the boxes, we also encourage you to apply. Above all else at Bank First, we look for people with heart and learning agility.
-We encourage applications from people of all ages, cultures, abilities, sexual orientation, and gender identities. We strive to provide a recruitment experience that’s fair, inclusive, and accessible.
-
-How do your skills match this job?
-----------------------------------
-
-Employer questions
-------------------
-• Are you legally entitled to work in Australia?*
-• If you are not a citizen or permanent resident please provide details of your visa type, expiry date, and any restrictions to your available working hours. 
-
-If you are a citizen / permanent resident simply indicate NA
-• Please provide your expected salary range (inclusive of Superannuation):
-• What is the notice period for your current role?
-• What are your preferred pronouns
-• Do you require reasonable adjustments to go through the recruitment process? If yes - provide details of adjustments required
-
-Report this job advert
-----------------------
-• Job search
-• Profile
-• Recommended jobs
-• Saved searches
-• Saved jobs
-• Applied jobs
-• Career advice
-• Explore careers
-• Explore salaries
-• Explore companies
-• Download appsAndroidiOS
-• Android
-• iOS
-• SEEK sitesEmployer siteSEEK NZBusinesses for saleVolunteering
-• Employer site
-• SEEK NZ
-• Businesses for sale
-• Volunteering
-• Android
-• iOS
-• Employer site
-• SEEK NZ
-• Businesses for sale
-• Volunteering
-• Register for free
-• Post a job ad
-• Products & prices
-• Customer service
-• Hiring advice
-• Market insights
-• Recruitment software partners
-• About SEEK
-• Newsroom
-• Investors
-• Careers
-• International partnersBdjobs (Bangladesh)Jobsdb (SE Asia)Jobstreet (SE Asia)Jora (Australia)Jora (Worldwide)
-• Bdjobs (Bangladesh)
-• Jobsdb (SE Asia)
-• Jobstreet (SE Asia)
-• Jora (Australia)
-• Jora (Worldwide)
-• Partner servicesSEEK PassGradConnectionJora LocalSidekickerGO1FutureLearnJobAdder
-• SEEK Pass
-• GradConnection
-• Jora Local
-• Sidekicker
-• GO1
-• FutureLearn
-• JobAdder
-• Bdjobs (Bangladesh)
-• Jobsdb (SE Asia)
-• Jobstreet (SE Asia)
-• Jora (Australia)
-• Jora (Worldwide)
-• SEEK Pass
-• GradConnection
-• Jora Local
-• Sidekicker
-• GO1
-• FutureLearn
-• JobAdder
-• Help centre
-• Contact us
-• Product & tech blog
-• SEEK videos
-• SocialFacebookInstagramTwitterYouTube
-• Facebook
-• Instagram
-• Twitter
-• YouTube
-• Facebook
-• Instagram
-• Twitter
-• YouTube
+Type: 
+Max term
+ 
+ 
+ 
+ 
+Length: 
+Up to 2 years
+Start: 
+February 2025
+Location: 
+Melbourne CBD (hybrid 3 days a week in office)
+Salary
+: up to $225K pkg (including super) depending on background & experience
+Essential Skills:
+ 
+ 
+Significant experience with 
+implementing SAP & Itron such as (IEE, UIQ & MTS)
+ for an 
+Energy / Utilities
+ business; as a hands-on 
+Solutions Architect
+, 
+Solution Designer.
+ 
+Understanding of technology, processes and frameworks for 
+Network Billing, Customer Information, Meter Data Management, Meter Management and NEM
+ Market Transactions.
+ 
+Recent
+ 
+work experience in
+ Energy Distribution 
+in the 
+Australian
+ market
+ 
+Experience with integration architecture, patterns, API & integration patterns is essential
+ 
+ 
+The responsibilities:
+ 
+ 
+Evaluate functional and technical requirements on high impact and large complex projects that can span multiple software technologies
+ 
+Design solutions, including data models, configuration, customisations, integrations, and workflows
+ 
+Acting as a technical guide, being able to speak conceptually, document architecturally and be comfortable doing hands on coding as well
+ 
+Design scalable solutions using a mixture of configuration and code to support business functions and product goals, knowing how to work in and around the limits of the platform
+ 
+Communicate with cross functional teams, information security, data privacy & compliance and principal architects to ensure a cohesive technical strategy is designed and executed upon
+ 
+Design and implement integrations between external systems, utilising APIs, middleware tools, and custom development
+ 
+Identify integration patterns, recommend integration technologies, and ensure data integrity and security
+ 
+Create and maintain technical documentation, including solution design documents, technical specifications, data models, and architectural diagrams. Ensure that all technical documentation is accurate, up-to-date, and easily understandable by technical and non-technical stakeholders
+ 
+ 
+Skills & experience we look for:
+ 
+ 
+Extensive demonstrable experience in the role of Solution Architect
+ 
+Substantial experience within the Australian Electricity Distribution industry
+ 
+Understanding of Australian Energy Distributor / Transmission technology, processes and frameworks 
+ 
+Strong communication, collaboration, and business stakeholder management skills.
+ 
+Experience partnering with delivery partners and vendors on achieving business objectives.
+ 
+A team player with a high level of accountability and a proactive attitude towards getting things done.
+ 
+Strong leadership skills, with a demonstrated ability to lead through influence in cross-functional environments
+ 
+ 
+About Us:
+Established in 1991, DWS is a professional Technology Consultancy and part of HCLTech. With offices across Australia, we have over 800 employees in Melbourne, Sydney, Adelaide, Brisbane and Canberra; providing services to a broad range of blue-chip corporate clients, as well as Federal, State and Local Government agencies. We provide a wide range of services including; IT consulting, managed application services, project management, customer driven innovation, digital transformation, data and business analytics, strategic advisory and productivity, and robotic process automation.
+Working at DWS offers you:
+ 
+ 
+Ongoing professional and career development
+ 
+An active social club that host regular, subsidised events
+ 
+Corporate discounts on a range of services and products, including health insurance, gym memberships, Apple products and much much more
+ 
+ All applicants must hold Australian Citizenship, Permanent Residency (PR), or other permanent work rights – DWS are unable to sponsor or support visas.
+Ready for a new challenge? Click
+ APPLY now!
+www.dws.com.au
+No agencies please – our in-house talent acquisition team have this covered.

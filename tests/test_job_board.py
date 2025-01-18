@@ -6,8 +6,7 @@ from unittest.mock import Mock, patch
 import pytest
 import requests
 
-from src.job_board import (JobBoardError, JobBoardManager, JobDetails,
-                           SeekScraper)
+from src.job_board import JobBoardError, JobBoardManager, JobDetails, SeekScraper
 
 
 @pytest.fixture
@@ -174,7 +173,7 @@ def test_job_details_extraction_edge_cases(seek_scraper: SeekScraper) -> None:
         mock_response.text = minimal_html
         mock_response.iter_content = Mock(return_value=[minimal_html.encode()])
         mock_get.return_value = mock_response
-        
+
         result = seek_scraper.fetch("https://www.seek.com.au/job/12345")
 
         assert result is not None
@@ -187,11 +186,11 @@ def test_job_details_extraction_edge_cases(seek_scraper: SeekScraper) -> None:
 def test_response_time(mock_get: Mock, mock_response: Mock, seek_scraper: SeekScraper) -> None:
     """Test response time is under 5 seconds."""
     mock_get.return_value = mock_response
-    
+
     start_time = time.time()
     job_details = seek_scraper.fetch("https://www.seek.com.au/job/12345")
     end_time = time.time()
-    
+
     assert job_details is not None
     assert end_time - start_time < 5, "Response time exceeded 5 seconds"
 
@@ -201,16 +200,16 @@ def test_streaming_functionality(mock_get: Mock, seek_scraper: SeekScraper) -> N
     """Test streaming functionality for large responses."""
     # Create a large HTML response
     large_html = "x" * (1024 * 1024)  # 1MB of data
-    chunks = [large_html[i:i + 8192].encode() for i in range(0, len(large_html), 8192)]
-    
+    chunks = [large_html[i : i + 8192].encode() for i in range(0, len(large_html), 8192)]
+
     mock_response = Mock()
     mock_response.iter_content = Mock(return_value=chunks)
     mock_get.return_value = mock_response
-    
+
     start_time = time.time()
     seek_scraper.fetch("https://www.seek.com.au/job/12345")
     end_time = time.time()
-    
+
     # Verify streaming was used (chunks were processed)
     assert mock_response.iter_content.called
     assert end_time - start_time < 5, "Large response processing exceeded 5 seconds"
@@ -220,14 +219,14 @@ def test_streaming_functionality(mock_get: Mock, seek_scraper: SeekScraper) -> N
 def test_connection_pooling(mock_get: Mock, mock_response: Mock, seek_scraper: SeekScraper) -> None:
     """Test connection pooling reuse."""
     mock_get.return_value = mock_response
-    
+
     # Make multiple requests
     for _ in range(5):
         seek_scraper.fetch("https://www.seek.com.au/job/12345")
-    
+
     # Verify session was reused
     assert mock_get.call_count == 5
-    assert all(call[1].get('timeout') == 5 for call in mock_get.call_args_list)
+    assert all(call[1].get("timeout") == 5 for call in mock_get.call_args_list)
 
 
 @patch("requests.Session.get")
@@ -237,11 +236,11 @@ def test_error_recovery(mock_get: Mock, mock_response: Mock, seek_scraper: SeekS
     mock_get.side_effect = [
         requests.ConnectionError("Temporary error"),
         requests.Timeout("Timeout"),
-        mock_response
+        mock_response,
     ]
-    
+
     job_details = seek_scraper.fetch("https://www.seek.com.au/job/12345")
-    
+
     assert job_details is not None
     assert mock_get.call_count == 3  # Verify retries were attempted
 
@@ -253,8 +252,8 @@ def test_compression_handling(mock_get: Mock, seek_scraper: SeekScraper) -> None
     mock_response.headers = {"Content-Encoding": "gzip"}
     mock_response.iter_content = Mock(return_value=[b"compressed_content"])
     mock_get.return_value = mock_response
-    
+
     seek_scraper.fetch("https://www.seek.com.au/job/12345")
-    
+
     # Verify compression headers were sent
     assert "gzip" in mock_get.call_args[1]["headers"]["Accept-Encoding"]

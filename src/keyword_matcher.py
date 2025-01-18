@@ -1,323 +1,357 @@
-"""Keyword matching and skill extraction functionality."""
+"""Keyword matching and ATS optimization."""
 
-import logging
+__all__ = ["KeywordMatcher", "SectionDetector", "SkillExtractor"]
+
 import re
-from typing import Dict, List, Set
+from collections import Counter
+from typing import Dict, List, Optional, Set, Union, TypedDict
 
-from src.exceptions import ProcessingError
+import spacy
+from sklearn.feature_extraction.text import TfidfVectorizer
 
-# Setup logging
-logger = logging.getLogger(__name__)
+# Load spaCy model for NLP processing
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    import subprocess
 
-
-class SkillPatterns:
-    """Common skill patterns used across classes."""
-
-    @staticmethod
-    def get_patterns() -> Dict[str, List[str]]:
-        """Return common skill patterns."""
-        return {
-            "programming": [
-                "python",
-                "java",
-                "javascript",
-                "c++",
-                "ruby",
-                "php",
-                "typescript",
-                "golang",
-                "rust",
-                "scala",
-                "python3",
-                "py3",
-            ],
-            "frameworks": [
-                "react",
-                "angular",
-                "vue",
-                "django",
-                "flask",
-                "spring",
-                "express",
-                "node.js",
-                "fastapi",
-                "rails",
-                "laravel",
-            ],
-            "databases": [
-                "sql",
-                "mysql",
-                "postgresql",
-                "mongodb",
-                "redis",
-                "oracle",
-                "cassandra",
-                "elasticsearch",
-                "dynamodb",
-                "sqlite",
-            ],
-            "cloud": [
-                "aws",
-                "azure",
-                "gcp",
-                "cloud",
-                "docker",
-                "kubernetes",
-                "terraform",
-                "serverless",
-                "lambda",
-                "ec2",
-                "s3",
-            ],
-            "tools": [
-                "git",
-                "jenkins",
-                "jira",
-                "confluence",
-                "bitbucket",
-                "github",
-                "gitlab",
-                "circleci",
-                "travis",
-                "ansible",
-            ],
-            "soft_skills": [
-                "agile",
-                "scrum",
-                "kanban",
-                "leadership",
-                "communication",
-                "teamwork",
-                "problem-solving",
-                "analytical",
-                "project mgmt",
-                "time management",
-                "collaboration",
-                "devops",
-                "ci/cd",
-            ],
-            "methodologies": [
-                "waterfall",
-                "agile",
-                "scrum",
-                "kanban",
-                "lean",
-                "devops",
-                "tdd",
-                "bdd",
-                "ci/cd",
-                "continuous integration",
-                "continuous deployment",
-            ],
-        }
+    subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"])
+    nlp = spacy.load("en_core_web_sm")
 
 
-class SectionDetector:
-    """Detects sections in resume text."""
+class IndustryTerms:
+    """Industry-specific terminology."""
 
-    def __init__(self):
-        """Initialize section detector."""
-        self.section_patterns = self.get_section_patterns()
-        self.skill_patterns = SkillPatterns.get_patterns()
+    TECH_TERMS = {
+        "languages": {
+            "python",
+            "java",
+            "javascript",
+            "typescript",
+            "c++",
+            "c#",
+            "ruby",
+            "go",
+            "rust",
+            "swift",
+            "kotlin",
+            "scala",
+            "php",
+            "perl",
+            "r",
+            "matlab",
+        },
+        "frameworks": {
+            "react",
+            "angular",
+            "vue",
+            "django",
+            "flask",
+            "spring",
+            "express",
+            "tensorflow",
+            "pytorch",
+            "keras",
+            "scikit-learn",
+            "pandas",
+            "numpy",
+        },
+        "cloud": {
+            "aws",
+            "azure",
+            "gcp",
+            "kubernetes",
+            "docker",
+            "terraform",
+            "jenkins",
+            "ci/cd",
+            "devops",
+            "microservices",
+            "serverless",
+            "iaas",
+            "paas",
+            "saas",
+        },
+        "databases": {
+            "sql",
+            "mysql",
+            "postgresql",
+            "mongodb",
+            "redis",
+            "elasticsearch",
+            "cassandra",
+            "dynamodb",
+            "oracle",
+            "sqlite",
+            "nosql",
+        },
+    }
 
-    @staticmethod
-    def get_section_patterns() -> Dict[str, str]:
-        """Return patterns for detecting resume sections."""
-        return {
-            "summary": r"(professional\s+)?summary",
-            "experience": r"(work\s+)?experience",
-            "education": r"education(\s+and\s+training)?",
-            "skills": (r"(technical\s+)?skills(\s+and\s+competencies)?"),
-            "projects": r"(personal\s+)?projects",
-            "certifications": (r"certifications?(\s+and\s+licenses)?"),
-            "languages": (r"languages?(\s+and\s+proficiencies)?"),
-            "interests": r"interests(\s+and\s+hobbies)?",
-        }
+    SOFT_SKILLS = {
+        "leadership": {
+            "team leadership",
+            "strategic planning",
+            "decision making",
+            "mentoring",
+            "coaching",
+            "conflict resolution",
+        },
+        "communication": {
+            "presentation skills",
+            "public speaking",
+            "technical writing",
+            "stakeholder management",
+            "client communication",
+        },
+        "management": {
+            "project management",
+            "agile",
+            "scrum",
+            "kanban",
+            "lean",
+            "risk management",
+            "resource planning",
+            "budgeting",
+        },
+    }
 
-    def _is_section_header(self, line: str, pattern: str) -> bool:
-        """Check if line matches section header pattern."""
-        try:
-            pattern = pattern.replace("(?i)", "")
-            line = line.strip()
-            flags = re.IGNORECASE
-            match = re.fullmatch(pattern, line, flags)
-            return bool(match)
-        except re.error:
-            return False
+    METHODOLOGIES = {
+        "agile": {
+            "scrum",
+            "kanban",
+            "xp",
+            "lean",
+            "safe",
+            "crystal",
+            "dsdm",
+            "feature driven development",
+            "adaptive software development",
+        },
+        "development": {
+            "tdd",
+            "bdd",
+            "ddd",
+            "ci/cd",
+            "devops",
+            "waterfall",
+            "spiral",
+            "rapid application development",
+            "extreme programming",
+        },
+        "design": {
+            "solid",
+            "dry",
+            "kiss",
+            "mvc",
+            "mvvm",
+            "clean architecture",
+            "microservices",
+            "service oriented architecture",
+        },
+    }
 
-    def identify_sections(self, text: str) -> Dict[str, str]:
-        """Identify sections in text content."""
-        try:
-            if not text.strip():
-                return {}
 
-            sections = {}
-            lines = [line.strip() for line in text.split("\n")]
-            if not lines:
-                return {}
+class ValidationResult(TypedDict):
+    """Type definition for section validation result."""
 
-            current_section = None
-            current_content = []
+    valid: bool
+    has_content: bool
+    has_structure: bool
+    has_metrics: bool
+    message: str
 
-            for line in lines:
-                if not line:
-                    continue
 
-                logger.debug("Checking line: %s", line)
-                is_header = False
+class SkillMatch(TypedDict):
+    """Type definition for skill match result."""
 
-                for section, pattern in self.section_patterns.items():
-                    if self._is_section_header(line, pattern):
-                        logger.debug("Found section header: %s", section)
-                        if current_section and current_content:
-                            content = "\n".join(current_content)
-                            sections[current_section] = content
-                        current_section = section
-                        current_content = []
-                        is_header = True
-                        break
+    name: str
+    confidence: float
 
-                if not is_header and current_section:
-                    logger.debug("Added content to %s: %s", current_section, line)
-                    current_content.append(line)
 
-            if current_section and current_content:
-                content = "\n".join(current_content)
-                sections[current_section] = content
+class MatchResult(TypedDict):
+    """Type definition for match result."""
 
-            logger.debug("Final sections: %s", sections)
-            return sections
+    score: float
+    matched_terms: float
 
-        except Exception as e:
-            logger.error("Error identifying sections: %s", str(e))
-            raise ProcessingError(f"Failed to identify sections: {str(e)}") from e
+
+class CategoryMatches(TypedDict):
+    """Type definition for category matches."""
+
+    score: float
+    matches: float
+
+
+class SectionScore(TypedDict):
+    """Type definition for section score."""
+
+    score: float
+    keyword_density: Dict[str, float]
+
+
+class MatchSkillsResult(TypedDict):
+    """Type definition for match_skills result."""
+
+    overall_match: Dict[str, Union[float, int]]
+    category_matches: Dict[str, CategoryMatches]
+    section_scores: Optional[Dict[str, SectionScore]]
 
 
 class KeywordMatcher:
-    """Simple keyword matching using regex."""
+    """Handles keyword matching and ATS optimization."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize keyword matcher."""
-        self.skill_patterns = self._load_skill_patterns()
+        self.vectorizer = TfidfVectorizer(
+            stop_words="english", ngram_range=(1, 3), max_features=1000
+        )
+        self.industry_terms = IndustryTerms()
 
-    def _load_skill_patterns(self) -> Dict[str, List[str]]:
-        """Load skill patterns."""
-        return SkillPatterns.get_patterns()
+    def extract_keywords(
+        self, text: str, *, include_phrases: bool = True, context: Optional[str] = None
+    ) -> Dict[str, Set[str]]:
+        """Extract important keywords from text using NLP."""
+        doc = nlp(text.lower())
+        keywords: Dict[str, Set[str]] = {
+            "technical": set(),
+            "soft_skills": set(),
+            "methodologies": set(),
+            "domain": set(),
+            "phrases": set() if include_phrases else set(),
+        }
+
+        # Extract named entities and noun phrases
+        for ent in doc.ents:
+            if ent.label_ in ["ORG", "PRODUCT", "GPE", "TECH"]:
+                if len(ent.text.split()) > 1:
+                    keywords["phrases"].add(ent.text)
+                else:
+                    keywords["technical"].add(ent.text)
+
+        # Extract noun phrases if enabled
+        if include_phrases:
+            for chunk in doc.noun_chunks:
+                if 2 <= len(chunk.text.split()) <= 3:  # 2-3 word phrases
+                    keywords["phrases"].add(chunk.text)
+
+        # Extract technical terms and skills
+        for token in doc:
+            if token.pos_ in ["NOUN", "PROPN"] and len(token.text) > 2:
+                # Check against industry terms
+                term = token.text.lower()
+                if any(term in terms for terms in self.industry_terms.TECH_TERMS.values()):
+                    keywords["technical"].add(term)
+                elif any(term in terms for terms in self.industry_terms.SOFT_SKILLS.values()):
+                    keywords["soft_skills"].add(term)
+                elif any(term in terms for terms in self.industry_terms.METHODOLOGIES.values()):
+                    keywords["methodologies"].add(term)
+
+        # Context-aware extraction
+        if context:
+            context_doc = nlp(context.lower())
+            for token in context_doc:
+                if token.pos_ in ["NOUN", "PROPN"]:
+                    keywords["domain"].add(token.text)
+
+        return keywords
+
+    def calculate_keyword_density(
+        self, text: str, section: Optional[str] = None
+    ) -> Dict[str, float]:
+        """Calculate keyword density scores with section context."""
+        # Get section-specific weights
+        weights = {"summary": 1.2, "experience": 1.0, "skills": 1.5, "education": 0.8}
+        section_weight = weights.get(section.lower(), 1.0) if section else 1.0
+
+        # Calculate density
+        words = re.findall(r"\b\w+\b", text.lower())
+        word_count = len(words)
+        density = Counter(words)
+
+        return {
+            word: float(count / word_count) * float(section_weight)
+            for word, count in density.items()
+        }
 
     def match_skills(self, resume_text: str, job_description: str) -> Dict[str, float]:
         """Match skills between resume and job description."""
-        try:
-            scores = {}
-            resume_lower = resume_text.lower()
-            job_lower = job_description.lower()
+        # Extract keywords from both texts
+        resume_keywords = self.extract_keywords(resume_text)
+        job_keywords = self.extract_keywords(job_description)
 
-            # Find all skills mentioned in job description
-            for _, skills in self.skill_patterns.items():
-                for skill in skills:
-                    pattern = rf"\b{re.escape(skill)}\b"
-                    if re.search(pattern, job_lower):
-                        has_skill = re.search(pattern, resume_lower)
-                        scores[skill] = 1.0 if has_skill else 0.0
+        # Calculate matches for each category
+        matches: Dict[str, float] = {}
 
-            # Add architecture as a special case
-            arch_pattern = r"\b(architect|architecture)\b"
-            if re.search(arch_pattern, job_lower):
-                has_arch = re.search(arch_pattern, resume_lower)
-                scores["Architecture"] = 1.0 if has_arch else 0.0
+        for category in ["technical", "soft_skills", "methodologies", "domain", "phrases"]:
+            resume_terms = resume_keywords[category]
+            job_terms = job_keywords[category]
 
-            return scores
+            if job_terms:  # Only calculate if job requires skills in this category
+                matched = resume_terms.intersection(job_terms)
+                score = len(matched) / len(job_terms) if job_terms else 0.0
+                matches[category] = score
 
-        except Exception as e:
-            logger.error("Error matching skills: %s", str(e))
-            raise ProcessingError(f"Failed to match skills: {str(e)}") from e
+        return matches
+
+
+class SectionDetector:
+    """Detects and identifies sections in resume text."""
+
+    def __init__(self) -> None:
+        """Initialize section detector."""
+        self.common_sections = {
+            "summary": ["summary", "professional summary", "profile", "objective"],
+            "experience": ["experience", "work experience", "employment history", "work history"],
+            "education": ["education", "academic background", "qualifications"],
+            "skills": ["skills", "technical skills", "core competencies", "expertise"],
+        }
+
+    def identify_sections(self, text: str) -> List[str]:
+        """Identify sections in the resume text."""
+        sections = []
+        lines = text.lower().split("\n")
+
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            for section_type, keywords in self.common_sections.items():
+                if any(keyword in line for keyword in keywords):
+                    if section_type not in sections:
+                        sections.append(section_type)
+
+        return sections
 
 
 class SkillExtractor:
-    """Simple skill extraction using regex patterns."""
+    """Extracts skills from text using NLP."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize skill extractor."""
-        self.matcher = KeywordMatcher()
-        self.categories = {
-            "technical": set(),
-            "soft": set(),
-            "domain": set(),
-            "tools": set(),
-        }
+        self.nlp = nlp
+        self.skill_patterns = [
+            "programming languages?",
+            "frameworks?",
+            "tools?",
+            "methodologies",
+            "technologies",
+            "platforms?",
+            "databases?",
+            "software",
+        ]
 
-    def extract_skills(self, text: str) -> Dict[str, Set[str]]:
-        """Extract and categorize skills from text."""
-        try:
-            if not text or not text.strip():
-                return {
-                    "technical": set(),
-                    "soft": set(),
-                    "domain": set(),
-                    "tools": set(),
-                }
+    def extract_skills(self, text: str) -> Set[str]:
+        """Extract skills from text."""
+        doc = self.nlp(text.lower())
+        skills = set()
 
-            text_lower = text.lower()
-            results = {
-                "technical": set(),
-                "soft": set(),
-                "domain": set(),
-                "tools": set(),
-            }
+        # Extract noun phrases following skill indicators
+        for sent in doc.sents:
+            sent_text = sent.text.lower()
+            if any(re.search(pattern, sent_text) for pattern in self.skill_patterns):
+                for token in sent:
+                    if token.pos_ in ["NOUN", "PROPN"]:
+                        skills.add(token.text)
 
-            # Extract skills by category
-            patterns = self.matcher._load_skill_patterns()
-            for category, skills in patterns.items():
-                for skill in skills:
-                    pattern_re = rf"\b{re.escape(skill)}\b"
-                    if re.search(pattern_re, text_lower):
-                        if category in {"soft_skills", "methodologies"}:
-                            results["soft"].add(skill)
-                        elif category in {
-                            "programming",
-                            "frameworks",
-                            "cloud",
-                            "databases",
-                        }:
-                            results["technical"].add(skill)
-                        else:
-                            results["tools"].add(skill)
-
-            # Add Python variations
-            python_patterns = [
-                r"\bpython\d*\b",
-                r"\bpy\d+\b",
-                r"\.py\b",
-                r"\bdjango\b",
-                r"\bflask\b",
-                r"\bfastapi\b",
-            ]
-            if any(re.search(p, text_lower) for p in python_patterns):
-                results["technical"].add("python")
-
-            # Domain expertise detection
-            domain_patterns = [
-                r"\bindustry\b",
-                r"\bdomain\b",
-                r"\bsector\b",
-                r"\bexpertise\b",
-                r"\bspecialization\b",
-            ]
-            if any(re.search(p, text_lower) for p in domain_patterns):
-                results["domain"].add("domain expertise")
-
-            # Tool detection
-            tool_patterns = [
-                r"\btool\b",
-                r"\bplatform\b",
-                r"\bsoftware\b",
-                r"\bsuite\b",
-                r"\bsystem\b",
-            ]
-            if any(re.search(p, text_lower) for p in tool_patterns):
-                results["tools"].add("tools")
-
-            return results
-
-        except Exception as e:
-            logger.error("Error extracting skills: %s", str(e))
-            raise ProcessingError(f"Failed to extract skills: {str(e)}") from e
+        return skills

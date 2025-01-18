@@ -1,311 +1,426 @@
-"""Smart Resume Tailoring Application."""
+"""Smart Resume Tailoring App - MVP Implementation."""
 
+import asyncio
 import logging
-import time
-from pathlib import Path
-from typing import Any, Dict, List, Optional
-
-import streamlit as st
+from docx import Document
 from dotenv import load_dotenv
+from io import BytesIO
+import streamlit as st
+from typing import Dict
 
-from src.components import (ComparisonView, ProgressIndicator, SectionSelector,
-                            setup_custom_styling)
-from src.config import Config, load_config
-from src.data_collection import DataCollector
-from src.document_handler import get_document_size, read_document
-from src.exceptions import JobBoardError
-from src.formatting import FormatPreserver
-from src.job_board import JobBoardScraper
-from src.keyword_matcher import KeywordMatcher, SectionDetector, SkillExtractor
-from src.models import AIModelManager
-from src.utils import (
-    MAX_AI_TIME,
-    MAX_UPLOAD_TIME,
-    check_environment_variables,
-    validate_file_format,
-    validate_input_size
+from src.ats_scorer import ATSScorer
+from src.job_board import JobBoardClient
+from src.job_recommender import JobRecommender
+from src.models import ModelManager
+from src.salary_analyzer import SalaryAnalyzer
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(levelname)s - %(message)s'
 )
+logger = logging.getLogger(__name__)
+
 
 # Load environment variables
 load_dotenv()
 
-# Setup logging
-logging.basicConfig(level=logging.WARNING)
-logger = logging.getLogger("resume_tailor")
-
 # Initialize components
-config = Config()
-
-# Check environment variables
-env_status = check_environment_variables()
-for var, status in env_status.items():
-    if status != 'valid':
-        st.error(f"{var} is {status}. Please check your environment configuration.")
-        st.stop()
-
-config.load_env_vars()
-
-# Load app settings
-app_settings = load_config()
-
-# Initialize managers and components
-ai_manager = AIModelManager(config)
-job_board = JobBoardScraper()
-comparison_view = ComparisonView()
-progress = ProgressIndicator()
-section_selector = SectionSelector()
-skill_extractor = SkillExtractor()
-data_collector = DataCollector("training_data.jsonl")
+model_manager = ModelManager()
+ats_scorer = ATSScorer()
+salary_analyzer = SalaryAnalyzer()
+job_recommender = JobRecommender()
 
 
-def init_session_state() -> None:
-    """Initialize session state variables."""
-    if "uploaded_file" not in st.session_state:
-        st.session_state.uploaded_file = None
-    if "job_description" not in st.session_state:
-        st.session_state.job_description = None
-    if "selected_model" not in st.session_state:
-        st.session_state.selected_model = "gpt-4"
-    if "tailored_content" not in st.session_state:
-        st.session_state.tailored_content = None
-    if "selected_sections" not in st.session_state:
-        st.session_state.selected_sections = []
-
-
-def save_uploaded_file(uploaded_file: Any) -> Optional[str]:
-    """Save uploaded file and return path."""
-    start_time = time.time()
-    try:
-        if not validate_file_format(uploaded_file.name):
-            st.error("Please upload a .docx file")
-            return None
-
-        save_path = Path("uploads") / uploaded_file.name
-        save_path.parent.mkdir(exist_ok=True)
-
-        with open(save_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-
-        # Check file size before processing
-        if get_document_size(str(save_path)) > 10 * 1024 * 1024:  # 10MB limit
-            st.error("File is too large. Please upload a smaller document.")
-            return None
-
-        upload_time = time.time() - start_time
-        if upload_time > 3:
-            logger.warning("Slow file upload: %.2fs > %ds", upload_time, MAX_UPLOAD_TIME)
-
-        return str(save_path)
-    except (OSError, IOError) as e:
-        logger.error("Error saving file: %s", str(e))
-        return None
-
-
-def process_resume(
-    file_path: str,
+async def process_section(
+    section: str,
+    section_content: str,
     job_description: str,
-    selected_sections: List[str],
-    model_name: str
-) -> Dict[str, Any]:
-    """Process resume with selected AI model."""
-    start_time = time.time()
-    try:
-        if not validate_input_size(job_description):
-            return {
-                "success": False, 
-                "error": "Job description is too large. Please shorten it."
-            }
+    importance: int,
+    selected_model: str,
+    temperature: float
+) -> tuple[str, dict]:
+    """Process a single section of the resume."""
+    # Generate prompt with importance level
+    prompt = model_manager.get_prompt(
+        section,
+        section_content,
+        job_description,
+        importance=importance
+    )
 
-        # Initialize progress
-        progress.start()
+    # Get completion using selected model
+    response = await model_manager.get_completion(
+        prompt,
+        selected_model,
+        temperature
+    )
 
-        # Extract resume content
-        try:
-            doc, resume_text = read_document(file_path)
-        except ValueError as e:
-            return {"success": False, "error": "Failed to read resume: %s" % str(e)}
-        
-        if not validate_input_size(resume_text):
-            return {
-                "success": False,
-                "error": "Resume text is too large. Please use a shorter resume."
-            }
-            
-        progress.next_step()
+    # Validate output
+    is_valid, issues, metrics = model_manager.validate_output(
+        section_content,  # Use section content for validation
+        response,
+        job_description,
+        section
+    )
 
-        # Extract job requirements
-        keyword_matcher = KeywordMatcher()
-        skill_scores = keyword_matcher.match_skills(resume_text, job_description)
-        progress.next_step()
-
-        # Switch to selected model
-        ai_manager.switch_model(model_name)
-
-        # Process with AI (with retry)
-        max_retries = 2
-        for attempt in range(max_retries):
-            try:
-                tailored_text = ai_manager.process_resume(
-                    resume_text,
-                    job_description,
-                    selected_sections,
-                    model_name=model_name
-                )
-                break
-            except Exception as e:
-                if attempt == max_retries - 1:
-                    logger.error("AI processing error: %s", str(e))
-                    error_msg = (
-                        "AI processing failed after %d attempts. "
-                        "Please try again or select a different model."
-                    )
-                    return {
-                        "success": False,
-                        "error": error_msg % max_retries
-                    }
-                time.sleep(1)  # Brief delay before retry
-            
-        progress.next_step()
-
-        # Check AI response time
-        ai_time = time.time() - start_time
-        if ai_time > MAX_AI_TIME:
-            logger.warning("Slow AI response: %.2fs > %ds", ai_time, MAX_AI_TIME)
-
-        # Preserve formatting
-        format_preserver = FormatPreserver(file_path)
-        output_path = format_preserver.apply_styles({0: tailored_text})
-        progress.next_step()
-
-        # Save anonymized training data
-        if st.session_state.get("share_data", False):
-            data_collector.save_training_data(
-                resume_text, job_description, tailored_text, {"model": model_name}
-            )
-
-        return {
-            "success": True,
-            "tailored_text": tailored_text,
-            "output_path": output_path,
-            "skill_scores": skill_scores,
-        }
-
-    except (OSError, IOError) as e:
-        logger.error("Error processing resume: %s", str(e))
-        return {"success": False, "error": str(e)}
+    return response, metrics
 
 
-def main() -> None:
-    """Main application."""
-    st.set_page_config(page_title="Smart Resume Tailoring", layout="wide")
+async def main() -> None:
+    """Main application function for the Smart Resume Tailoring App."""
+    st.set_page_config(
+        page_title="Smart Resume Tailoring App",
+        page_icon="📄",
+        layout="wide"
+    )
 
-    setup_custom_styling()
-    init_session_state()
+    # Load custom CSS
+    with open("static/styles.css") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-    st.title("Smart Resume Tailoring")
+    # App title with custom styling
+    st.markdown(
+        """
+        <div class="stcard">
+            <h1 style='text-align: center; color: #1976D2;'>
+                📄 Smart Resume Tailoring App
+            </h1>
+            <p style='text-align: center; color: #666;'>
+                Optimize your resume with AI-powered insights
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-    # Sidebar
+    # Sidebar for model selection and configuration
     with st.sidebar:
-        st.header("Settings")
+        st.header("AI Model Configuration")
 
         # Model selection
-        st.session_state.selected_model = st.selectbox(
-            "Select AI Model", options=ai_manager.list_available_models()
+        available_models = model_manager.list_available_models()
+        model_options = {m["name"]: m["description"] for m in available_models}
+        selected_model = st.selectbox(
+            "Select AI Model",
+            options=list(model_options.keys()),
+            help="Choose the AI model for resume tailoring"
+        )
+        st.caption(model_options[selected_model])
+
+        # Model settings
+        temperature = st.slider(
+            "Temperature",
+            min_value=0.0,
+            max_value=1.0,
+            value=0.7,
+            step=0.1,
+            help="Higher values make output more creative, lower more focused"
         )
 
-        # Data sharing opt-in
-        share_text = "Share anonymized data for improvement"
-        st.session_state.share_data = st.checkbox(share_text, value=False)
+        # Data collection opt-in
+        enable_data_collection = st.checkbox(
+            "Allow anonymous data collection",
+            value=False,
+            help="Help improve the system by sharing anonymized data"
+        )
 
-    # Main content
-    col1, col2 = st.columns(2)
+    # Main content area
+    # File upload
+    uploaded_file = st.file_uploader("Upload your resume (Word)", type=["docx"])
 
-    with col1:
-        st.subheader("Upload Resume")
-        uploaded_file = st.file_uploader("Choose a file", type=["docx"])
+    # Job description input
+    job_input_type = st.radio(
+        "Job Description Input",
+        ["Paste Text", "Enter URL"],
+        help="Choose how to input the job description"
+    )
 
-        if uploaded_file:
-            st.session_state.uploaded_file = save_uploaded_file(uploaded_file)
-
-    with col2:
-        st.subheader("Job Description")
-        job_url = st.text_input("Enter job URL (optional)")
-
+    job_description = ""
+    if job_input_type == "Paste Text":
+        job_description = st.text_area("Paste Job Description")
+    else:
+        job_url = st.text_input(
+            "Enter Job URL",
+            help="Enter a Seek.com.au job posting URL"
+        )
         if job_url:
             with st.spinner("Fetching job description..."):
                 try:
-                    job_description = job_board.fetch_job_description(job_url)
-                    if job_description:
-                        if validate_input_size(job_description):
-                            st.session_state.job_description = job_description
-                            st.success("Job description fetched successfully")
-                        else:
-                            st.error(
-                                "Fetched job description is too large. "
-                                "Please paste a shorter version manually."
-                            )
-                except JobBoardError as e:
-                    st.error(
-                        "Could not fetch job description. "
-                        "Please paste it manually below.\n\n"
-                        "Error: %s" % str(e)
+                    client = JobBoardClient()
+                    job_details = await client.fetch_job_description(job_url)
+                    st.success("Job details fetched successfully!")
+                    st.subheader(job_details["title"])
+                    st.caption(
+                        f"{job_details['company']} - "
+                        f"{job_details['location']}"
                     )
-                    # Show supported job boards
-                    supported = job_board.get_supported_sites()
-                    st.info("Supported job boards: " + ", ".join(supported))
-
-        text_area_label = "Or paste job description"
-        text_area_value = st.session_state.job_description or ""
-        st.session_state.job_description = st.text_area(
-            text_area_label, value=text_area_value, height=200
-        )
+                    job_description = job_details["description"]
+                    st.text_area(
+                        "Fetched Job Description",
+                        value=job_description,
+                        disabled=True
+                    )
+                except ValueError as e:
+                    st.error(f"Invalid job URL: {str(e)}")
+                except Exception as e:
+                    st.error(f"Error fetching job description: {str(e)}")
 
     # Section selection
-    if st.session_state.uploaded_file:
-        try:
-            doc, resume_text = read_document(st.session_state.uploaded_file)
-            section_detector = SectionDetector()
-            sections = section_detector.identify_sections(resume_text)
-            st.session_state.selected_sections = section_selector.display_selector(sections)
-        except Exception as e:
-            st.error("Error reading document sections: %s" % str(e))
-            st.session_state.selected_sections = []
+    st.subheader("Section Selection")
+    st.markdown(
+        "Choose which sections to tailor and set their importance level. "
+        "Higher importance means more focus on matching job requirements."
+    )
 
-    # Process button
-    if (
-        st.button("Tailor Resume")
-        and st.session_state.uploaded_file
-        and st.session_state.job_description
-        and st.session_state.selected_sections
-    ):
-        with st.spinner("Processing..."):
-            result = process_resume(
-                st.session_state.uploaded_file,
-                st.session_state.job_description,
-                st.session_state.selected_sections,
-                st.session_state.selected_model,
+    # Create columns for section selection
+    col1, col2 = st.columns(2)
+
+    # Dictionary to store section selections and their importance
+    section_config = {}
+
+    # Left column: Core sections
+    with col1:
+        st.markdown("### Core Sections")
+        if st.checkbox("Summary", value=True):
+            section_config["summary"] = st.slider(
+                "Summary Importance",
+                min_value=1,
+                max_value=5,
+                value=5,
+                help="Higher values mean stronger alignment with job requirements"
+            )
+        if st.checkbox("Experience", value=True):
+            section_config["experience"] = st.slider(
+                "Experience Importance",
+                min_value=1,
+                max_value=5,
+                value=4
             )
 
-            if result["success"]:
-                st.session_state.tailored_content = result["tailored_text"]
+    # Right column: Additional sections
+    with col2:
+        st.markdown("### Additional Sections")
+        if st.checkbox("Skills", value=True):
+            section_config["skills"] = st.slider(
+                "Skills Importance",
+                min_value=1,
+                max_value=5,
+                value=4
+            )
+        if st.checkbox("Education"):
+            section_config["education"] = st.slider(
+                "Education Importance",
+                min_value=1,
+                max_value=5,
+                value=3
+            )
 
-                # Display comparison
-                doc, _ = read_document(st.session_state.uploaded_file)
-                comparison_view.display_comparison(doc, result["tailored_text"])
+    # Store selected sections
+    sections = list(section_config.keys())
 
-                # Download button
-                with open(result["output_path"], "rb") as f:
-                    st.download_button(
-                        "Download Tailored Resume", f, file_name="Tailored_Resume.docx"
+    if st.button("Tailor Resume"):
+        if uploaded_file and job_description and sections:
+            try:
+                # Extract text from Word document
+                doc = Document(uploaded_file)
+                resume_text = "\n".join(p.text for p in doc.paragraphs)
+
+                # Extract sections from resume
+                resume_sections: Dict[str, str] = await model_manager._determine_sections(
+                    job_description, resume_text
+                )
+                logger.debug(f"Found resume sections: {list(resume_sections.keys())}")
+
+                # Process selected sections
+                tailored_sections = {}
+                section_metrics = {}
+
+                # Process each section concurrently
+                tasks = []
+                valid_sections = []
+                for section in sections:
+                    section_lower = section.lower()
+                    if section_lower in resume_sections:
+                        section_content = resume_sections[section_lower]
+                        importance = section_config[section]
+                        tasks.append(
+                            process_section(
+                                section,
+                                section_content,
+                                job_description,
+                                importance,
+                                selected_model,
+                                temperature
+                            )
+                        )
+                        valid_sections.append(section)
+                    else:
+                        logger.warning(
+                            f"Section '{section}' not found in resume. "
+                            f"Available sections: {list(resume_sections.keys())}"
+                        )
+                        st.warning(f"Section '{section}' not found in resume")
+
+                if tasks:  # Only process if we have valid sections
+                    # Wait for all sections to be processed
+                    results = await asyncio.gather(*tasks)
+
+                    # Store results
+                    for section, (content, metrics) in zip(valid_sections, results):
+                        tailored_sections[section] = content
+                        section_metrics[section] = metrics
+
+                    # Show metrics with custom styling
+                    st.markdown(
+                        f"""
+                        <div class='section-header'>
+                            <h4>Metrics for {section}</h4>
+                        </div>
+                        <div class='metrics-card'>
+                            <div style='
+                                display: grid;
+                                grid-template-columns: repeat(2, 1fr);
+                                gap: 1rem;
+                            '>
+                                <div>
+                                    <strong>Length Ratio:</strong>
+                                    {metrics['length_ratio']:.2f}
+                                </div>
+                                <div>
+                                    <strong>Keyword Retention:</strong>
+                                    {metrics['keyword_retention']:.2f}
+                                </div>
+                                <div>
+                                    <strong>Job Alignment:</strong>
+                                    {metrics['job_alignment']:.2f}
+                                </div>
+                                {
+                                    "<div><strong>Metrics Mentioned:</strong> "
+                                    + str(metrics['metrics_mentioned']) + "</div>"
+                                    if 'metrics_mentioned' in metrics else ""
+                                }
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
                     )
 
-                # Show skill matches
-                st.subheader("Skill Match Analysis")
-                for skill, score in result["skill_scores"].items():
-                    st.progress(score, text=f"{skill}: {score:.0%}")
-            else:
-                st.error("Error processing resume: %s" % result["error"])
+                # Display results with custom styling
+                st.markdown(
+                    """
+                    <div class='section-header'>
+                        <h4>Tailored Resume</h4>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                # Create columns for each section
+                for section, content in tailored_sections.items():
+                    st.markdown(
+                        f"""
+                        <div class='stcard section-card'>
+                            <div class='section-title'>
+                                <h3>{section.title()}</h3>
+                            </div>
+                            <div class='section-content'>{content}</div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+                # Create download options
+                st.markdown(
+                    """
+                    <div class='section-header'>
+                        <h4>Download Options</h4>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    # Create DOCX in memory
+                    doc = Document()
+                    for section, content in tailored_sections.items():
+                        # Add section header with styling
+                        heading = doc.add_heading(section.title(), level=1)
+                        from docx.shared import RGBColor
+                        heading.style.font.color.rgb = RGBColor(0x19, 0x76, 0xD2)  # Blue color
+                        # Add content with formatting
+                        paragraph = doc.add_paragraph(content)
+                        if paragraph.style:
+                            paragraph.style.paragraph_format.space_after = 12
+
+                    # Save to bytes
+                    docx_buffer = BytesIO()
+                    doc.save(docx_buffer)
+                    docx_bytes = docx_buffer.getvalue()
+
+                    st.download_button(
+                        label="📥 Download as DOCX",
+                        data=docx_bytes,
+                        file_name="tailored_resume.docx",
+                        mime=(
+                            "application/vnd.openxmlformats-"
+                            "officedocument.wordprocessingml.document"
+                        ),
+                        help="Download your tailored resume in Microsoft Word format"
+                    )
+
+                with col2:
+                    # Create formatted PDF content
+                    pdf_sections = []
+                    for section, content in tailored_sections.items():
+                        pdf_sections.extend([
+                            section.upper(),  # Section header in caps
+                            "=" * len(section),  # Underline
+                            "",  # Blank line
+                            content,
+                            "\n"  # Extra spacing
+                        ])
+                    pdf_content = "\n".join(pdf_sections)
+
+                    st.download_button(
+                        label="📥 Download as PDF",
+                        data=pdf_content.encode(),
+                        file_name="tailored_resume.pdf",
+                        mime="application/pdf",
+                        help="Download your tailored resume in PDF format"
+                    )
+
+                # Collect training data if opted in
+                if enable_data_collection and tailored_sections:
+                    try:
+                        # Collect training data concurrently
+                        training_tasks: list[asyncio.Task[None]] = []
+                        for section, content in tailored_sections.items():
+                            if section in section_metrics:  # Only collect if we have metrics
+                                # Create task for each training data collection
+                                coro = model_manager.collect_training_data(
+                                    resume_text,
+                                    job_description,
+                                    content,
+                                    section,
+                                    section_metrics[section]
+                                )
+                                task = asyncio.create_task(coro)
+                                training_tasks.append(task)
+                        if training_tasks:
+                            await asyncio.gather(*training_tasks)
+                    except Exception as e:
+                        st.warning(f"Failed to collect training data: {str(e)}")
+
+            except Exception as e:
+                st.error(f"Error processing resume: {str(e)}")
+        else:
+            st.warning(
+                "Please upload a resume, enter a job description, "
+                "and select sections to tailor."
+            )
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

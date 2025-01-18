@@ -1,7 +1,7 @@
 CONTACT INFO
 sarkar.vikram@gmail.com
 +61 433 224 556
-Melbourne, Victoria, Australia  linkedin.com/in/vikramd-profile
+Melbourne, Victoria, Australia linkedin.com/in/vikramd-profile
 EDUCATION
 Master's Degree Database Management, Business Analysis, Project
 Management
@@ -44,7 +44,7 @@ Led the implementation of Agile methodologies, increasing team productivity by 2
 Streamlined Agile ceremonies, improving team alignment and reducing sprint delays by 11%, resulting in faster time-to-market for new product features and improving client satisfaction by 17%.
 Optimized workflows using Lean principles, reducing operational inefficiencies by 18%, saving annual costs in process.
 Prioritized product features with stakeholders, reducing product backlogs by 19% and delivering key features 90% before schedule, driving a significant increase in product adoption.
-Removed blockers and coached teams, leading to a 40% increase in the team’s ability to meet sprint goals, avoid scope creep, and resulting in a 50% improvement in team engagement and productivity.
+Removed blockers and coached teams, leading to a 40% increase in the team's ability to meet sprint goals, avoid scope creep, and resulting in a 50% improvement in team engagement and productivity.
 Ensured 100% milestone delivery on time through proactive risk management, resulting in a 44% increase in revenue from go-to- market timelines for key product launches.
 Project Manager/Lead business analyst
 NAB
@@ -65,7 +65,7 @@ Led business analysis, reporting to GM on the status of 2015 DevOps and business
 Business Analyst
 Telstra
 Nov 2014 - Sep 2015
-Developed and implemented a comprehensive set of customer journey scorecards, increasing management’s ability to identify customer experience bottlenecks, leading to a 12% improvement in customer satisfaction scores in the first quarter.
+Developed and implemented a comprehensive set of customer journey scorecards, increasing management's ability to identify customer experience bottlenecks, leading to a 12% improvement in customer satisfaction scores in the first quarter.
 Facilitated a streamlined requirements gathering process and translated them into clear JIRA stories, reducing delivery time for key business features by 20% and improving stakeholder engagement by 25%, resulting in the faster rollout of mobile services.
 Facilitated stakeholder workshops that identified key performance gaps, driving a 15% increase in operational efficiency across customer service teams and improving issue resolution time by 18%, contributing to a better Net Promoter Score (NPS).
 Conducted deep data analysis on customer episodes, identifying actionable insights that led to a 10% reduction in churn and a 5% increase in customer retention by aligning service improvements with customer needs.

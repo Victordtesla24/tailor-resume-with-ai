@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Resume Tailoring App</title>
+    <link rel="stylesheet" href="static/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="main">
+        <!-- Streamlit components will be injected here -->
+        {{ main_content }}
+    </div>
+
+    <script>
+        // Function to create radar chart for skills analysis
+        function createSkillsChart(ctx, labels, data) {
+            return new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Skills Match',
+                        data: data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(54, 162, 235, 1)'
+                    }]
+                },
+                options: {
+                    elements: {
+                        line: {
+                            borderWidth: 3
+                        }
+                    },
+                    scales: {
+                        r: {
+                            angleLines: {
+                                display: true
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to create salary comparison chart
+        function createSalaryChart(ctx, marketMin, marketMax, offered) {
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Market Range', 'Offered'],
+                    datasets: [{
+                        label: 'Salary Range',
+                        data: [[marketMin, marketMax], [offered, offered]],
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.2)',
+                            'rgba(255, 159, 64, 0.2)'
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to create ATS score gauge
+        function createATSGauge(score) {
+            const gauge = document.getElementById('ats-gauge');
+            const percentage = Math.min(Math.max(score, 0), 100);
+            const color = percentage >= 85 ? '#4CAF50' :
+                         percentage >= 70 ? '#FFA726' : '#EF5350';
+
+            gauge.style.background = `conic-gradient(
+                ${color} ${percentage * 3.6}deg,
+                #f3f3f3 ${percentage * 3.6}deg
+            )`;
+            gauge.setAttribute('data-score', percentage);
+        }
+    </script>
+</body>
+</html>

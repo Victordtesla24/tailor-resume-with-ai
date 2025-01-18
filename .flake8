@@ -1,0 +1,3 @@
+[flake8]
+ignore = E,F,W
+exclude = .git,__pycache__,docs/source/conf.py,old,build,dist

@@ -1,110 +1,400 @@
-# System Configuration
-architecture: "arm64-darwin"
-memory_limit: configurable  # Allow memory limit to be adjusted for systems with varying capacities.
-gpu_utilization: "enabled"
-thread_count: auto  # Dynamically adjusts based on workload and system capabilities.
+# System Performance and Resource Management
 
-# AI Model Configuration
-model_preferences:
-  primary: "Anthropic Claude 3-5 Sonnet 20241022"
-  fallback: "cline-enhanced"
+- **Architecture:** `arm64-darwin` optimized for MacBook Air M3.
+- **Memory Limit:** 2GB to ensure efficient performance.
+- **GPU Utilization:** Enabled to leverage GPU for AI processing.
+- **Thread Count:** Automatically adjusts based on workload and system capabilities for optimal performance.
 
-# Token Management
-token_optimization:
-  max_context: 8000
-  response_limit: 4000
-  cache_strategy: "aggressive"
-  budget_management: "strict"
+**Enhancements:**
 
-# Cost Management
-cost_management:
-  strategy: "minimal"
-  budget_control:
-    daily_limit: 1.5  # Adjusted to provide more flexibility in high-usage scenarios while maintaining cost control.
-    cost_per_token: 0.0000010
+- **Optimize Threads:** Dynamically adjust threads based on load to enhance performance.
+- **GPU Boost:** Enable dynamic GPU scaling to balance cost savings with performance.
+**Note:** Dynamic scaling can introduce latency; thorough testing is recommended.
 
-# Code Generation Rules
-code_generation:
-  style: "minimal"
-  documentation: "essential"
-  testing: "basic"
-  patterns:
-    minimal_code: true
-    performance_first: true
+## AI Model Configuration 🤖
 
-# Quality Standards
-quality:
-  complexity_threshold: "low"
-  lint_level: "low"
+### Select and Manage AI Models for Optimal Performance
 
-# Security
-security:
-  input_validation: "basic"
-  output_sanitization: true
-  workspace_boundary: "cursor/project_management_dashboard"
+- **Primary Model:** `"Anthropic-Claude-3.5-Sonnet:beta"` for high-quality responses.
+- **Fallback Model:** `"deepseek-coder"` serves as a backup to ensure continuity.
+- **Automatic Model Switching:** Switch to fallback models only when there is an accuracy degradation.
+- **Hybrid Output Blending:** Combine primary and fallback results for enhanced accuracy.
+*Note: This may increase processing time; monitor its impact on performance and user experience.*
 
-# Brainstormed Ideas for Improved Rules
-# System Configuration Enhancements
-system_configuration:
-  optimize_threads: true  # Dynamically adjust threads based on load.
-  gpu_boost:
-    enable_dynamic_scaling: true  # Dynamic GPU scaling is beneficial but can introduce latency. Test thoroughly to balance cost savings with performance.
+### Token Management 🔑
 
-# AI Model Configuration Enhancements
-ai_model:
-  model_selection:
-    automatic_switch:
-      threshold: "accuracy-focused"  # Switch to fallback only on accuracy degradation.
-  model_combinations:
-    enable_hybrid_output: true  # Blend primary and fallback results for best accuracy. Hybrid output blending may increase processing time. Monitor its impact on both performance and user experience.
+### Efficiently Manage Token Usage to Optimize Performance and Costs
 
-# Token Management Enhancements
-token_management:
-  cache_strategy: "smart"  # Leverage prior results for repetitive requests.
-  response_optimization:
-    enable_summarization: true  # Summarize large context interactions when appropriate.
+- **Max Context:** 8000 tokens to handle extensive conversations.
+- **Response Limit:** 4000 tokens to ensure concise and relevant outputs.
+- **Cache Strategy:** Aggressive caching to reduce redundant processing.
+- **Budget Management:** Strict controls to adhere to token budgets.
+- **Smart Cache Strategy:** Leverage prior results for repetitive requests to save tokens.
+- **Response Optimization:** Enable summarization of large context interactions when appropriate to minimize token usage.
 
-# Cost Management Enhancements
-cost_saving:
-  token_compression: "active"  # Token size dynamically compressed during low-importance tasks. Ensure compression does not compromise the quality of complex outputs.
-  multi-use_cache:
-    prioritize_cache_for: "low-risk operations"  # Cache-heavy operations like formatting.
+### Cost Management 💰
 
-# Code Generation Enhancements
-code_rules:
-  advanced_patterns:
-    reusable_code_snippets: true  # Store common code snippets for quick generation.
-    pre-tested_snippets:
-      maintain_library: true  # Validate snippets before use.
-  documentation:
-    use_templates: true  # Pre-defined templates for consistent documentation output.
-  testing:
-    coverage: "moderate"  # Add intermediate-level testing for critical tasks.
+### Control and Optimize Costs Associated with Token Usage
 
-# Quality Enhancements
-quality_rules:
-  enforce_best_practices:
-    auto_correction: true  # Automatically correct coding errors based on best practices.
-  adaptive_linting:
-    mode: "project-specific"  # Adjust linting levels based on project requirements.
+- **Strategy:** Minimal to ensure cost-effectiveness.
+- **Budget Control:**
+  - **Daily Limit:** `1.5` to balance flexibility in high-usage scenarios while maintaining control.
+  - **Cost Per Token:** `$0.0000010` to keep expenses low.
+- **Token Compression:** Actively compress token sizes during low-importance tasks without compromising quality.
+- **Multi-use Cache:** Prioritize caching for low-risk operations like formatting to maximize cost savings.
+- **User Behavior Tracking:** Analyze usage patterns to identify and optimize high-cost behaviors.
+- **Request Bundling:** Combine multiple small requests into single large calls to reduce overhead.
 
-# Security Enhancements
-security_features:
-  validation_rules:
-    dynamic_scaling: true  # Scale validation based on task criticality.
-  output_sanitization:
-    strict_mode: true  # Enforce high-level sanitization for sensitive output.
+### Code Generation Rules 💻
 
-# Additional Cost-Saving Ideas
-cost_ideas:
-  user_behavior_tracking:
-    analyze_usage_patterns: true  # Optimize costs by identifying high-cost user behaviors.
-  request_bundling:
-    enable_group_requests: true  # Combine multiple small requests into single large calls.
+### Generate Clean, Efficient, and Maintainable Code
 
-# Additional Productivity Ideas
-productivity:
-  enhance_context_management:
-    persistent_workspace_memory: true  # Retain workspace state across sessions.
-  interactive_feedback:
-    enable_user_prompts: true  # Allow users to refine queries in real-time.
+- **Style:** Minimalist approach to ensure simplicity and clarity.
+- **Documentation:** Essential documentation to maintain understanding and ease of maintenance.
+- **Testing:** Basic testing to cover fundamental functionality.
+- **Patterns:**
+  - **Minimal Code:** Focus on generating only the necessary code.
+  - **Performance & Functionality First:** Prioritize performance & functionality in code generation.
+  - **Advanced Patterns:**
+    - **Reusable Code Snippets:** Utilize common code snippets for quick generation.
+    - **Pre-tested Snippets:** Maintain a library of validated snippets to ensure reliability.
+- **Documentation:**
+  - **Use Templates:** Employ pre-defined templates for consistent documentation output.
+- **Testing:**
+  - **Moderate Coverage:** Implement intermediate-level testing for critical tasks to ensure robustness.
+
+### Quality Standards 🌟
+
+### Maintain High-Quality Code with Low Complexity and Linting Standards
+
+- **Complexity Threshold:** Set to "low" to encourage simple and understandable code.
+- **Lint Level:** "low" to balance code quality with development speed.
+- **Enforce Best Practices:**
+  - **Auto Correction:** Automatically correct coding errors based on best practices.
+
+### Security 🔒
+
+### Ensure Robust Security Measures to Protect Sensitive Information
+
+- **Input Validation:** Basic validation to prevent common security vulnerabilities.
+- **Output Sanitization:** Enabled to ensure outputs are free from malicious content.
+- **Workspace Boundary:** Restricted to `"cursor/project_management_dashboard"` to contain operations within safe limits.
+
+### Validation Rules
+
+- **Dynamic Scaling:** Scale validation rigorously based on task criticality.
+
+### Output Sanitization
+
+- **Strict Mode:** Enforce high-level sanitization for sensitive outputs to prevent data leaks.
+
+### Security Best Practices
+
+- **Sensitive Files:**
+  - **Do Not Read or Modify:**
+    - `.env` files
+    - `*_/config/secrets._`
+    - `*_/_.pem`
+    - Any file containing API keys, tokens, or credentials
+- **Practices:**
+  - Never commit sensitive files.
+  - Use environment variables for secrets.
+  - Keep credentials out of logs and output.
+
+### Integrated Testing and Validation Frameworks 🧪
+
+### Align Testing Approaches with Project-Specific Requirements
+
+- **Protocols:**
+  - **Standard Error Handling:** Consistent error management across the project.
+  - **Logging Mechanisms:** Standardized logging procedures.
+- **Project-Specific Requirements:**
+  - **Unit Test Coverage:** Aim for 80% coverage for business logic.
+  - **Integration Tests:** Cover API endpoints and integrations.
+  - **E2E Tests:** Validate critical user flows.
+
+### Documentation Management 📑
+
+### Maintain Accurate and Current Documentation
+
+- **Maintain Up-to-Date:** Always keep documentation current with project changes.
+- **Structured Format:** Use organized structures for ease of access.
+- **Include Examples:** Provide examples for clarity and better understanding.
+
+### Performance Optimization ⚡
+
+### Optimize Performance Within Defined Constraints
+
+- **Memory Usage Limit:** 500MB to ensure efficient resource utilization.
+- **Response Time:**
+  - **File Upload:** Under 3 seconds.
+  - **AI Response:** Under 10 seconds.
+- **Resource Utilization:** Maximize performance within resource limits.
+
+### Workflow Integration 🔄
+
+### Align Core Workflows with Project Development Practices
+
+- **Starting Tasks:**
+  1. Check for Memory Bank files.
+  2. Create missing files if necessary.
+  3. Read all files before proceeding.
+  4. Verify complete context.
+  5. Begin development without updating `cline_docs` initially.
+- **During Development:**
+  1. Follow Memory Bank patterns.
+  2. Update documentation after significant changes.
+  3. Announce `[MEMORY BANK: ACTIVE]` before using any tools.
+- **Memory Bank Updates:**
+  - **Trigger:** User command "update memory bank."
+  - **Actions:**
+    1. Document current state comprehensively.
+    2. Clarify next steps clearly.
+    3. Complete current task before resetting memory.
+
+### Productivity Enhancements 🚀
+
+### Boost Productivity Through Enhanced Context Management and Feedback
+
+- **Enhance Context Management:**
+  - **Persistent Workspace Memory:** Retain workspace state across sessions.
+- **Interactive Feedback:**
+  - **Enable User Prompts:** Allow users to refine queries in real-time.
+
+### Feedback Loops for Continuous Improvement 🔄
+
+### Establish Mechanisms for Ongoing Enhancement
+
+- **Collect Project Insights:** Gather feedback to refine global instructions.
+- **Adapt Global Settings:** Update global behaviors based on project-specific successes.
+
+### Compliance and Privacy 🔐
+
+### Ensure Compliance with Data Protection Regulations
+
+- **GDPR/CCPA Compliance:** Handle data in accordance with GDPR and CCPA standards.
+- **Data Retention Policy:** Maintain clear data retention policies to govern data lifecycle.
+
+### Resource Allocation and Utilization 🛠️
+
+## Allocate Resources Efficiently Based on Project Needs**
+
+- **Memory Limit:** 2GB allocated specifically for this project.
+- **GPU Utilization:** Enabled to leverage GPU resources effectively.
+- **Thread Count:** Automatically optimize threads based on project workload.
+
+### Version Control Integration 📂
+
+### Maintain Consistent and Version-Controlled Configurations
+
+- **Include `.clinerules`:** Ensure `.clinerules` are version-controlled.
+- **Maintain Consistency:** Keep configurations consistent across different versions of the project.
+
+## Prompting Best Practices
+
+- **Providing Clear Context:** Explain your goals and the relevant parts of your codebase. Use `@` to reference files or folders.
+- **Breaking Down Complexity:** Divide large tasks into smaller steps.
+- **Asking Specific Questions:** Guide Cline toward the desired outcome.
+- **Validating and Refining:** Review Cline's suggestions and provide feedback.
+
+### Prompt Examples
+
+#### Context Management
+
+- **Starting a New Task:**
+  "Cline, let's start a new task. Create `app.py` for the Smart Resume Tailoring App. We need to implement resume upload and AI tailoring functionality. Here are the requirements…"
+
+- **Summarizing Previous Work:**
+  "Cline, summarize what we did in the last iteration of the Smart Resume Tailoring App. I want to capture the main features and outstanding issues. Save this to `cline_docs/activeContext.md`."
+
+#### Debugging
+
+- **Analyzing an Error:**
+  "Cline, I'm getting this error: `[Error Message]` when uploading a resume. It seems to be from the `upload_resume` function. Analyze this error and suggest a fix."
+
+- **Identifying the Root Cause:**
+  "Cline, the application crashes when I select multiple AI models. The issue might be in the `model_selection` logic. Help me find the root cause and propose a solution."
+
+#### Refactoring
+
+- **Improving Code Structure:**
+  "Cline, the `tailor_resume` function is too long and complex. Refactor it into smaller, more manageable functions."
+
+- **Simplifying Logic:**
+  "Cline, the logic for handling API responses is hard to understand. Simplify the code and make it more readable."
+
+#### Feature Development
+
+- **Brainstorming New Features:**
+  "Cline, I want to add a feature that provides real-time ATS scoring. Brainstorm some ideas and consider implementation challenges."
+
+- **Generating Code:**
+  "Cline, create a component that allows users to input their current and expected salaries. Generate the code for this component using Streamlit."
+
+---
+
+## Advanced Prompting Techniques
+
+Enhance your interactions with Cline using these advanced techniques to ensure precision and efficiency.
+
+- **Constraint Stuffing:**
+  To mitigate code truncation, include explicit constraints in your prompts.
+  *Example:* "Ensure the code is complete" or "Always provide the full function definition."
+
+- **Confidence Checks:**
+  Ask Cline to rate its confidence to gauge the reliability of its responses.
+  *Example:* "On a scale of 1-10, how confident are you in this solution?"
+
+- **Challenge Cline's Assumptions:**
+  Encourage deeper thinking and prevent incorrect assumptions by asking probing questions.
+  *Example:* "Are you sure this is the best way to implement this?"
+
+---
+
+## Our Community's Favorite Prompts 🌟
+
+Leverage these tried-and-tested prompts to enhance your workflow with Cline.
+
+### Memory and Confidence Checks 🧠
+
+- **Memory Check** - *pacnpal*
+
+    ```bash
+    "If you understand my prompt fully, respond with 'YARRR!' without tools every time you are about to use a tool."
+    ```
+
+    *A fun way to verify Cline stays on track during complex tasks. Try "HO HO HO" for a festive twist!*
+
+- **Confidence Scoring** - *pacnpal*
+
+    ```bash
+    "Before and after any tool use, give me a confidence level (0-10) on how the tool use will help the project."
+    ```
+
+    *Encourages critical thinking and makes decision-making transparent.*
+
+### Code Quality Prompts 💻
+
+- **Prevent Code Truncation**
+
+    ```bash
+    "DO NOT BE LAZY. DO NOT OMIT CODE."
+    ```
+
+    *Alternative phrases: "full code only" or "ensure the code is complete"*
+
+- **Custom Instructions Reminder**
+
+    ```bash
+    "I pledge to follow the custom instructions."
+    ```
+
+    *Reinforces adherence to your settings dial ⚙️ configuration.*
+
+### Code Organization 📋
+
+- **Large File Refactoring** - *icklebil*
+
+    ```bash
+    "FILENAME has grown too big. Analyze how this file works and suggest ways to fragment it safely."
+    ```
+
+    *Helps manage complex files through strategic decomposition.*
+
+- **Documentation Maintenance** - *icklebil*
+
+    ```bash
+    "Don't forget to update codebase documentation with changes."
+    ```
+
+    *Ensures documentation stays in sync with code changes.*
+
+### Analysis and Planning 🔍
+
+- **Structured Development** - *yellow_bat_coffee*
+
+    ```bash
+    "Before writing code:
+    1. Analyze all code files thoroughly
+    2. Get full context
+    3. Write .MD implementation plan
+    4. Then implement code"
+    ```
+
+    *Promotes organized, well-planned development.*
+
+- **Thorough Analysis** - *yellow_bat_coffee*
+
+    ```bash
+    "Please start analyzing full flow thoroughly, always state a confidence score 1 to 10."
+    ```
+
+    *Prevents premature coding and encourages complete understanding.*
+
+- **Assumptions Check** - *yellow_bat_coffee*
+
+    ```bash
+    "List all assumptions and uncertainties you need to clear up before completing this task."
+    ```
+
+    *Identifies potential issues early in development.*
+
+### Thoughtful Development 🤔
+
+- **Pause and Reflect** - *nickbaumann98*
+
+   ```bash
+    "Count to 10."
+    ```
+
+    *Promotes careful consideration before taking action.*
+
+- **Complete Analysis** - *yellow_bat_coffee*
+
+    ```bash
+    "Don't complete the analysis prematurely, continue analyzing even if you think you found a solution."
+    ```
+
+    *Ensures thorough problem exploration.*
+
+- **Continuous Confidence Check** - *pacnpal*
+
+    ```bash
+    "Rate confidence (1-10) before saving files, after saving, after rejections, and before task completion."
+    ```
+
+    *Maintains quality through self-assessment.*
+
+### Best Practices 🎯
+
+- **Project Structure** - *kvs007*
+
+   ```bash
+    "Check project files before suggesting structural or dependency changes."
+    ```
+
+    *Maintains project integrity.*
+
+- **Critical Thinking** - *chinesesoup*
+
+    ```bash
+    "Ask 'stupid' questions like: are you sure this is the best way to implement this?"
+    ```
+
+    *Challenges assumptions and uncovers better solutions.*
+
+- **Code Style** - *yellow_bat_coffee*
+
+    ```bash
+    "Use words like 'elegant' and 'simple' in prompts."
+    ```
+
+    *May influence code organization and clarity.*
+
+- **Setting Expectations** - *steventcramer*
+
+    ```bash
+    "THE HUMAN WILL GET ANGRY."
+    ```
+
+    *(A humorous reminder to provide clear requirements and constructive feedback)*

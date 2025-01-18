@@ -1,362 +1,172 @@
-"""Utility functions for performance monitoring and error handling."""
+"""Utility functions and classes for the resume tailoring app."""
 
-import hashlib
 import logging
 import os
-import re
-import resource
-import sys
+import psutil
+import tempfile
 import time
-from functools import lru_cache, wraps
+from functools import wraps
 from pathlib import Path
-from typing import (Any, Callable, Dict, NamedTuple, Optional, Protocol,
-                    TypedDict, TypeVar)
-
-logger = logging.getLogger("resume_tailor")
+from typing import Any, Callable, Dict, TypeVar, cast
 
 T = TypeVar("T")
 
+logger = logging.getLogger(__name__)
+
 # Constants
-MAX_MEMORY_MB = 500
-MAX_UPLOAD_TIME = 3
-MAX_AI_TIME = 10
-MAX_INPUT_SIZE = 50000
-CHUNK_SIZE = 1024 * 1024  # 1MB chunks for file reading
-
-# Required environment variables with their validators
-REQUIRED_ENV_VARS = {
-    "OPENAI_API_KEY": (
-        lambda x: bool(x and x.startswith("sk-")),
-        'OpenAI API key must start with "sk-". Please check your API key format.',
-    ),
-    "ANTHROPIC_API_KEY": (
-        lambda x: bool(x and x.startswith("sk-ant-")),
-        'Anthropic API key must start with "sk-ant-". Please check your API key format.',
-    ),
-}
-
-# Try to import psutil, fallback to resource module
-USE_PSUTIL = False  # Disable psutil since it's causing import issues
-logger = logging.getLogger("resume_tailor")
+MAX_UPLOAD_TIME = 3  # seconds
+MAX_AI_TIME = 10  # seconds
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+MAX_TEXT_LENGTH = 10000  # characters
+MAX_INPUT_SIZE = 50000  # characters for API inputs
+CHUNK_SIZE = 4096  # bytes for file reading
+MAX_MEMORY_MB = 500  # Maximum memory usage in MB
 
 
-# Custom type definitions
-class ValidationResult(TypedDict):
-    """Result of validation operation containing validity and error message."""
+class RateLimiter:
+    """Rate limiter for API calls."""
 
-    valid: bool
-    error: Optional[str]
+    def __init__(self, requests_per_minute: int):
+        """Initialize rate limiter.
 
+        Args:
+            requests_per_minute: Maximum number of requests allowed per minute
+        """
+        self.requests_per_minute = requests_per_minute
+        self.window = 60.0  # 1 minute in seconds
+        self.timestamps: list[float] = []
 
-class InputMetrics(TypedDict):
-    """Metrics for input validation including length and maximum allowed size."""
+    def can_access(self) -> bool:
+        """Check if we can make another request."""
+        now = time.time()
 
-    length: int
-    max_allowed: int
+        # Remove timestamps older than the window
+        self.timestamps = [ts for ts in self.timestamps if now - ts <= self.window]
 
+        if len(self.timestamps) >= self.requests_per_minute:
+            return False
 
-class InputValidationResult(TypedDict):
-    """Result of input validation including validity, error message, and metrics."""
+        self.timestamps.append(now)
+        return True
 
-    valid: bool
-    error: Optional[str]
-    metrics: InputMetrics
+    def __call__(self, func: Callable) -> Callable:
+        """Decorator to rate limit function calls."""
 
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            if not self.can_access():
+                logger.warning("Rate limit reached. Waiting for next window.")
+                time.sleep(self.window / self.requests_per_minute)
+            return func(*args, **kwargs)
 
-class EnvVarStatus(TypedDict):
-    """Status of environment variable validation including presence and validity."""
-
-    present: bool
-    valid: bool
-    error: Optional[str]
-
-
-class EnvCheckResult(TypedDict):
-    """Result of environment variable checks with detailed status and counts."""
-
-    valid: bool
-    variables: Dict[str, EnvVarStatus]
-    missing_count: int
-    invalid_count: int
+        return wrapper
 
 
-class EnvValidatorProtocol(Protocol):
-    """Protocol defining interface for environment variable validators."""
+def validate_file_format(filename: str) -> Dict[str, Any]:
+    """Validate file format is .docx.
 
-    def __call__(self, value: Optional[str]) -> bool:
-        ...
+    Returns:
+        Dict with validation result and error message if any.
+    """
+    if not filename:
+        return {"valid": False, "error": "No filename provided"}
+
+    if not filename.lower().endswith(".docx"):
+        return {"valid": False, "error": "Invalid file format. Only .docx files are supported."}
+
+    return {"valid": True, "error": None}
 
 
-class ValidatorConfig(NamedTuple):
-    """Configuration for validators including validation function and error message."""
+def validate_input_size(text: str) -> Dict[str, Any]:
+    """Validate input text size.
 
-    validator: EnvValidatorProtocol
-    error_msg: str
+    Returns:
+        Dict with validation result and error message if any.
+    """
+    if not text:
+        return {"valid": False, "error": "No text provided"}
+
+    text_length = len(text)
+    if text_length > MAX_TEXT_LENGTH:
+        return {
+            "valid": False,
+            "error": f"Text too long ({text_length} chars, max {MAX_TEXT_LENGTH})",
+        }
+
+    return {"valid": True, "error": None}
 
 
-class EnvValidator:
-    """Environment variable validator with type-safe methods."""
+def check_environment_variables() -> Dict[str, str]:
+    """Check required environment variables are set and valid."""
+    required_vars = {
+        "OPENAI_API_KEY": lambda x: x and x.startswith("sk-"),
+        "ANTHROPIC_API_KEY": lambda x: x and x.startswith("sk-ant-"),
+    }
 
-    @staticmethod
-    def validate_openai_key(value: Optional[str]) -> bool:
-        return bool(value and value.startswith("sk-"))
+    status = {}
+    for var, validator_func in required_vars.items():
+        value = os.getenv(var)
+        try:
+            if validator_func(value):
+                status[var] = "valid"
+            else:
+                status[var] = "invalid"
+        except (TypeError, AttributeError):
+            status[var] = "missing"
 
-    @staticmethod
-    def validate_anthropic_key(value: Optional[str]) -> bool:
-        return bool(value and value.startswith("sk-ant-"))
+    return status
+
+
+def anonymize_data(text: str) -> str:
+    """Anonymize sensitive data in text."""
+    # TODO: Implement more sophisticated anonymization
+    return text[:300] + "..." if len(text) > 300 else text
 
 
 def get_memory_usage() -> float:
     """Get current memory usage in MB."""
-    try:
-        # Use resource module directly since psutil is not available
-        rusage = resource.getrusage(resource.RUSAGE_SELF)
-        if sys.platform == "darwin":
-            # macOS reports in bytes
-            return float(rusage.ru_maxrss) / (1024 * 1024)
-        else:
-            # Linux reports in kilobytes
-            return float(rusage.ru_maxrss) / 1024
-    except (OSError, ValueError) as e:
-        logger.error("Error getting memory usage: %s", str(e))
-        return 0.0
-
-
-@lru_cache(maxsize=100)
-def get_cached_memory_usage() -> float:
-    """Get memory usage with caching to reduce system calls."""
-    return get_memory_usage()
+    process = psutil.Process(os.getpid())
+    return process.memory_info().rss / 1024 / 1024
 
 
 def track_performance(operation: str) -> Callable[[Callable[..., T]], Callable[..., T]]:
-    """Decorator to track operation performance."""
+    """Decorator to track function performance."""
 
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> T:
             start_time = time.time()
             start_memory = get_memory_usage()
+
             try:
                 result = func(*args, **kwargs)
-                duration = time.time() - start_time
-                memory_used = get_memory_usage() - start_memory
-                # Log performance metrics
+
+                end_time = time.time()
+                end_memory = get_memory_usage()
+
+                duration = end_time - start_time
+                memory_used = end_memory - start_memory
+
                 logger.info(
-                    f"{operation} completed in {duration:.2f}s " f"using {memory_used:.2f}MB memory"
+                    "%s completed in %.2fs using %.2fMB memory", operation, duration, memory_used
                 )
-                # Check against thresholds
-                if operation == "file_upload" and duration > MAX_UPLOAD_TIME:
-                    logger.warning(f"Slow file upload: {duration:.2f}s > {MAX_UPLOAD_TIME}s")
-                elif operation == "ai_response" and duration > MAX_AI_TIME:
-                    logger.warning(f"Slow AI response: {duration:.2f}s > {MAX_AI_TIME}s")
-                if memory_used > MAX_MEMORY_MB * 0.8:  # Warning at 80%
-                    logger.warning(f"High memory usage: {memory_used:.2f}MB")
+
                 return result
+
             except Exception as e:
-                logger.error(f"{operation} failed: {str(e)}")
+                logger.error("%s failed: %s", operation, str(e))
                 raise
 
-        return wrapper
+        return cast(Callable[..., T], wrapper)
 
     return decorator
 
 
-def validate_file_format(file_name: str) -> ValidationResult:
-    """Validate file format with detailed checks."""
-    if not file_name:
-        return {"valid": False, "error": "No file provided"}
-
-    if not file_name.lower().endswith(".docx"):
-        return {"valid": False, "error": "Only .docx files are supported"}
-
-    return {"valid": True, "error": None}
-
-
-def anonymize_data(text: str) -> str:
-    """Anonymize sensitive data in text."""
-    patterns = [
-        (r"\b[\w\.-]+@[\w\.-]+\.\w+\b", "[EMAIL]"),
-        (r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b", "[PHONE]"),
-        (
-            r"\b\d+\s+[A-Za-z\s,]+\b(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd)\.?\b",
-            "[ADDRESS]",
-        ),
-        (r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+\b", "[NAME]"),  # Possible names
-        (r"\b(?:http[s]?://)?(?:[\w-]+\.)+[\w-]+(?:/[^\s]*)?", "[URL]"),  # URLs
-        (r"\b\d{5}(?:-\d{4})?\b", "[ZIP]"),  # ZIP codes
-    ]
-
-    anonymized = text
-    for pattern, replacement in patterns:
-        anonymized = re.sub(pattern, replacement, anonymized)
-
-    # Truncate long strings to reduce identifiable content
-    if len(anonymized) > MAX_INPUT_SIZE:
-        anonymized = anonymized[:MAX_INPUT_SIZE] + "..."
-
-    return anonymized
-
-
-def validate_input_size(text: str, max_size: int = MAX_INPUT_SIZE) -> InputValidationResult:
-    """Validate input size with metrics."""
-    if not text or text.strip() == "":  # Enhanced empty check
-        return {
-            "valid": False,
-            "error": "Empty input provided. Please enter some text.",
-            "metrics": {"length": 0, "max_allowed": max_size},
-        }
-
-    # Remove excessive whitespace
-    text = " ".join(text.split())
-    length = len(text)
-
-    if length < 10:  # Minimum reasonable size
-        return {
-            "valid": False,
-            "error": "Input too short. Please provide more details.",
-            "metrics": {"length": length, "max_allowed": max_size},
-        }
-
-    if length > max_size:
-        error_msg = (
-            f"Input too large ({length:,} characters). "
-            f"Maximum allowed is {max_size:,} characters."
-        )
-        return {
-            "valid": False,
-            "error": error_msg,
-            "metrics": {"length": length, "max_allowed": max_size},
-        }
-
-    return {"valid": True, "error": None, "metrics": {"length": length, "max_allowed": max_size}}
-
-
-def check_environment_variables() -> EnvCheckResult:
-    """Check required environment variables with detailed validation."""
-    results: Dict[str, EnvVarStatus] = {}
-    missing_count = 0
-    invalid_count = 0
-
-    for var_name, (validator_func, error_msg) in REQUIRED_ENV_VARS.items():
-        value = os.getenv(var_name)
-        status: EnvVarStatus = {"present": bool(value), "valid": False, "error": None}
-
-        if not value:
-            status["error"] = (
-                f"Missing {var_name}. Please set this environment variable. "
-                "You can find your API key in your account settings."
-            )
-            missing_count += 1
-        elif not validator_func(value):
-            status["error"] = (
-                f"Invalid {var_name}: {error_msg} "
-                "Please check your account settings for the correct key."
-            )
-            invalid_count += 1
-        else:
-            status["valid"] = True
-
-        results[var_name] = status
-
-    return {
-        "valid": missing_count == 0 and invalid_count == 0,
-        "variables": results,
-        "missing_count": missing_count,
-        "invalid_count": invalid_count,
-    }
-
-
 def get_secure_storage_path() -> Path:
-    """Get secure storage path for sensitive data."""
-    # Use XDG_DATA_HOME or platform-specific default
-    if sys.platform == "darwin":
-        base = Path.home() / "Library" / "Application Support"
-    else:
-        base = Path(os.getenv("XDG_DATA_HOME", Path.home() / ".local" / "share"))
+    """Get secure storage path for sensitive data.
 
-    base_dir = base / "resume_tailor" / "data"
-    base_dir.mkdir(parents=True, exist_ok=True)
-
-    # Set directory permissions to be private
-    try:
-        if sys.platform != "win32":  # Skip on Windows
-            os.chmod(base_dir, 0o700)  # User read/write/execute only
-
-            # Ensure parent directory is also protected
-            parent = base_dir.parent
-            if parent.exists():
-                os.chmod(parent, 0o755)  # More permissive for parent
-    except (OSError, PermissionError) as e:
-        logger.warning("Could not set directory permissions: %s", str(e))
-
-    # Create a secure random subdirectory for this session
-    session_id = hashlib.sha256((str(time.time()) + os.urandom(16).hex()).encode()).hexdigest()[:16]
-
-    secure_dir = base_dir / session_id
-    secure_dir.mkdir(parents=True, exist_ok=True)
-
-    try:
-        if sys.platform != "win32":  # Skip on Windows
-            os.chmod(secure_dir, 0o700)  # User read/write/execute only
-    except (OSError, PermissionError) as e:
-        logger.warning("Could not set session directory permissions: %s", str(e))
-
-    return secure_dir
-
-
-def hash_sensitive_data(data: str) -> str:
-    """Hash sensitive data for storage."""
-    return hashlib.sha256(data.encode()).hexdigest()
-
-
-def handle_ai_call(operation: str, func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
-    """Handle AI calls with timeout and retry logic."""
-    start_time = time.time()
-    retries = 2  # Maximum 2 retries
-    last_error = None
-
-    for attempt in range(retries + 1):
-        try:
-            result = func(*args, **kwargs)
-            duration = time.time() - start_time
-
-            if duration > MAX_AI_TIME:
-                logger.warning(f"AI call took {duration:.2f}s (limit: {MAX_AI_TIME}s)")
-
-            return result
-
-        except Exception as e:
-            last_error = e
-            if attempt < retries:
-                logger.warning(f"{operation} failed (attempt {attempt + 1}): {str(e)}")
-                time.sleep(1)  # Brief pause before retry
-            else:
-                logger.error(f"{operation} failed after {retries} retries: {str(e)}")
-
-    # If we get here, all retries failed
-    raise ValueError(f"AI operation failed: {str(last_error)}")
-
-
-def validate_job_description(text: str) -> InputValidationResult:
-    """Validate job description with specific checks."""
-    # First check basic input size
-    size_validation = validate_input_size(text)
-    if not size_validation["valid"]:
-        return size_validation
-
-    # Additional job description specific checks
-    text = text.strip()
-    word_count = len(text.split())
-
-    if word_count < 20:  # Minimum words for a reasonable job description
-        return {
-            "valid": False,
-            "error": "Job description too short. Please provide more details.",
-            "metrics": {"length": len(text), "max_allowed": MAX_INPUT_SIZE},
-        }
-
-    return {
-        "valid": True,
-        "error": None,
-        "metrics": {"length": len(text), "max_allowed": MAX_INPUT_SIZE},
-    }
+    Returns:
+        Path to secure storage directory.
+    """
+    base_dir = Path(tempfile.gettempdir()) / "resume_tailor"
+    base_dir.mkdir(mode=0o700, exist_ok=True)
+    return base_dir

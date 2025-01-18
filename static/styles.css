@@ -1,0 +1,307 @@
+/* Custom CSS for Smart Resume Tailoring App */
+
+/* Main container styling */
+.main {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Input form styling */
+.stTextInput>div>div>input,
+.stTextArea>div>div>textarea {
+    background-color: white;
+    border: 1px solid #E0E0E0;
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-size: 1rem;
+}
+
+.stTextInput>div>div>input:focus,
+.stTextArea>div>div>textarea:focus {
+    border-color: #1976D2;
+    box-shadow: 0 0 0 1px #1976D2;
+}
+
+/* File uploader styling */
+.stFileUploader>div {
+    background-color: white;
+    border: 2px dashed #E0E0E0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stFileUploader>div:hover {
+    border-color: #1976D2;
+    background-color: #F5F9FF;
+}
+
+/* Radio button styling */
+.stRadio>div {
+    background-color: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* Checkbox styling */
+.stCheckbox>div>div>label {
+    font-weight: 500;
+    color: #333;
+}
+
+/* Slider styling */
+.stSlider>div>div>div>div {
+    background-color: #1976D2;
+}
+
+/* Button styling */
+.stButton>button {
+    background-color: #1976D2;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.stButton>button:hover {
+    background-color: #1565C0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Card styling */
+.stcard {
+    background-color: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.stcard:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Section card styling */
+.section-card {
+    border-left: 4px solid #1976D2;
+    margin: 1.5rem 0;
+    background: linear-gradient(to right, #f8f9fa, white);
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.section-card:hover {
+    transform: translateX(5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+    background: linear-gradient(to right, #1976D2, #2196F3);
+    color: white;
+    padding: 1rem;
+    margin: 0;
+}
+
+.section-title h3 {
+    color: white;
+    margin: 0;
+    font-size: 1.2rem;
+    letter-spacing: 0.5px;
+}
+
+.section-title h3 {
+    color: #1976D2;
+    margin: 0;
+}
+
+.section-content {
+    white-space: pre-wrap;
+    line-height: 1.8;
+    color: #333;
+    padding: 1.5rem;
+    font-size: 1rem;
+    letter-spacing: 0.2px;
+    background: white;
+}
+
+/* Download section styling */
+.download-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-top: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.download-section h4 {
+    color: #1976D2;
+    margin-bottom: 1rem;
+}
+
+/* Section content bullet points */
+.section-content ul {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+
+.section-content li {
+    margin: 0.25rem 0;
+    position: relative;
+}
+
+.section-content li::before {
+    content: "•";
+    color: #1976D2;
+    position: absolute;
+    left: -1rem;
+}
+
+/* Download buttons styling */
+.stButton>button {
+    width: 100%;
+    margin: 0.75rem 0;
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: white;
+    border: 2px solid #1976D2;
+    color: #1976D2;
+}
+
+.stButton>button:hover {
+    background: #1976D2;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(25, 118, 210, 0.2);
+}
+
+.stButton>button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(25, 118, 210, 0.1);
+}
+
+.stButton>button::before {
+    content: "📥";
+    font-size: 1.2rem;
+}
+
+.stButton>button:first-child {
+    background-color: #1976D2;
+}
+
+.stButton>button:last-child {
+    background-color: #2E7D32;
+}
+
+.stButton>button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Metrics card styling */
+.metrics-card {
+    background: linear-gradient(135deg, #f6f8fb 0%, #f1f4f9 100%);
+    border-radius: 10px;
+    padding: 1rem;
+    margin: 0.5rem 0;
+}
+
+/* Progress bar styling */
+.stProgress > div > div {
+    background-color: #4CAF50;
+}
+
+/* Score display styling */
+.score-display {
+    font-size: 2.5rem;
+    font-weight: bold;
+    text-align: center;
+    padding: 1rem;
+    border-radius: 10px;
+    margin: 1rem 0;
+}
+
+.score-high {
+    background-color: #E8F5E9;
+    color: #2E7D32;
+}
+
+.score-medium {
+    background-color: #FFF3E0;
+    color: #EF6C00;
+}
+
+.score-low {
+    background-color: #FFEBEE;
+    color: #C62828;
+}
+
+/* Section headers */
+.section-header {
+    background: linear-gradient(90deg, #1976D2 0%, #2196F3 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 10px;
+    margin: 1.5rem 0 1rem 0;
+}
+
+/* Recommendations styling */
+.recommendation-card {
+    border-left: 4px solid #1976D2;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    background-color: #F5F5F5;
+}
+
+/* Salary insights styling */
+.salary-card {
+    background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin: 1rem 0;
+}
+
+/* Skills gap styling */
+.skills-gap {
+    background-color: #FFF8E1;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 0.5rem 0;
+}
+
+/* Tooltip styling */
+.tooltip {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px dotted #666;
+}
+
+.tooltip:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.5rem;
+    background-color: #333;
+    color: white;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    z-index: 1;
+}

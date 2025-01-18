@@ -1,74 +1,103 @@
-Smart Resume Tailoring App: Implementation Guide
-Personal Invocation
-“Cursor AI, take a deep breath and become our Senior Developer—someone with 20+ years of coding across multiple paradigms. Your philosophies:
-1.	Less code is better code.
-2.	Aim for modern, appealing designs with minimal complexity.
-3.	Solve errors swiftly and thoroughly.
-Please keep code generation concise and focus on the essential parts that yield functionality and clarity. If extra fluff appears, prune it. Let’s build an efficient, modern, and user-friendly app.”
- 
-1. Setting the Stage
-1.	Project Goal
-o	A Smart Resume Tailoring App built on MacBook Air M3.
-o	Developed with Python + Streamlit.
-o	Uses multiple AI providers (OpenAI, Anthropic, etc.).
-o	Guided by Cursor AI wearing its senior dev hat (i.e., minimal code, maximum clarity).
-2.	Fail Fast, Iterate Quickly
-o	Launch a basic MVP, test with real data, then refine.
-o	If features fail or become unwieldy, drop or fix them immediately.
-o	Maintain tight feedback loops for user experience improvements.
-3.	Senior Dev Persona Principles
-o	Keep It Simple: Provide only necessary imports and code.
-o	Small, Elegant Functions: Each function has a clear single purpose.
-o	Efficient Error Handling: Catch and explain errors briefly; don’t bury them under layers of logging.
- 
-2. Environment Setup (Minimalist Edition)
-1.	Install Python (if needed):
-2.	brew install python
-3.	Create & Activate Virtual Environment:
-4.	python3 -m venv resume_app_env
-5.	source resume_app_env/bin/activate
-6.	Install Requirements:
-7.	pip install streamlit openai anthropic python-docx requests beautifulsoup4 selenium python-dotenv
-8.	Acquire & Open Cursor AI
-o	Download from cursor.sh.
-o	Open project folder.
-o	Confirm environment works by running a small test: 
-o	print("Senior Dev Persona in effect, environment is ready!")
-9.	Basic Security/Privacy Note
-o	By default, we store data locally and do not share it with third parties unless the user opts in for data collection (see Iteration 2).
-o	If handling user resumes for real production, consider GDPR/CCPA compliance and ensure you have a clear data retention policy.
- 
-3. MVP: Minimal, Yet Effective
-Success Criteria
-1.	Core Requirements
-o	Upload Word format (.docx) resumes only
-o	Extract text content successfully
-o	Generate tailored content for selected sections
-o	Display readable output
-2.	Error Handling
-o	Invalid file format detection
-o	API failure recovery
-o	Missing input validation
-3.	Performance Metrics
-o	File upload under 3 seconds
-o	AI response under 10 seconds
-o	Memory usage under 500MB
-4.	Quick Testing
-o	Manual check: Upload a small .docx resume, select a section or two, supply a job description, and ensure a tailored output is produced promptly.
-Implementation Checkpoints
-•	File upload and validation working
-•	Text extraction successful
-•	Section selection functional
-•	AI integration complete
-•	Basic error handling in place
-Core Functions
-1.	Upload Word Resume
-2.	Paste Job Description
-3.	Select Sections (Summary, Experience, etc.)
-4.	Generate Tailored Resume Using One AI Model (OpenAI)
-Instructions to Cursor AI
-“Cursor AI, you are in senior dev mode. Generate a lean app.py that accomplishes the following MVP requirements with minimal code and strong clarity.”
-Proposed MVP Code:
+# Smart Resume Tailoring App: Implementation Guide
+
+## Personal Invocation
+
+"Cursor AI, take a deep breath and become our Senior Developer—someone with 20+ years of coding across multiple paradigms. Your philosophies:
+
+1. Less code is better code.
+2. Aim for modern, appealing designs with minimal complexity.
+3. Solve errors swiftly and thoroughly.
+
+Please keep code generation concise and focus on the essential parts that yield functionality and clarity. If extra fluff appears, prune it. Let's build an efficient, modern, and user-friendly app."
+
+## 1. Setting the Stage
+
+### 1.1 Project Goal
+
+- A Smart Resume Tailoring App built on MacBook Air M3.
+- Developed with Python + Streamlit.
+- Uses multiple AI providers (OpenAI, Anthropic, etc.).
+- Guided by Cursor AI wearing its senior dev hat (i.e., minimal code, maximum clarity).
+
+### 1.2 Fail Fast, Iterate Quickly
+
+- Launch a basic MVP, test with real data, then refine.
+- If features fail or become unwieldy, drop or fix them immediately.
+- Maintain tight feedback loops for user experience improvements.
+
+### 1.3 Senior Dev Persona Principles
+
+- Keep It Simple: Provide only necessary imports and code.
+- Small, Elegant Functions: Each function has a clear single purpose.
+- Efficient Error Handling: Catch and explain errors briefly; don't bury them under layers of logging.
+
+## 2. Environment Setup (Minimalist Edition)
+
+1. Install Python (if needed):
+   - `brew install python`
+2. Create & Activate Virtual Environment:
+   - `python3 -m venv resume_app_env`
+   - `source resume_app_env/bin/activate`
+3. Install Requirements:
+   - `pip install streamlit openai anthropic python-docx requests beautifulsoup4 selenium python-dotenv`
+4. Acquire & Open Cursor AI
+   - Download from cursor.sh.
+   - Open project folder.
+   - Confirm environment works by running a small test:
+     - `print("Senior Dev Persona in effect, environment is ready!")`
+5. Basic Security/Privacy Note
+   - By default, we store data locally and do not share it with third parties unless the user opts in for data collection (see Iteration 2).
+   - If handling user resumes for real production, consider GDPR/CCPA compliance and ensure you have a clear data retention policy.
+
+## 3. MVP: Minimal, Yet Effective
+
+### Success Criteria
+
+#### 1. Core Requirements
+
+- Upload Word format (.docx) resumes only
+- Extract text content successfully
+- Generate tailored content for selected sections
+- Display readable output
+
+#### 2. Error Handling
+
+- Invalid file format detection
+- API failure recovery
+- Missing input validation
+
+#### 3. Performance Metrics
+
+- File upload under 3 seconds
+- AI response under 10 seconds
+- Memory usage under 500MB
+
+#### 4. Quick Testing
+
+- Manual check: Upload a small .docx resume, select a section or two, supply a job description, and ensure a tailored output is produced promptly.
+
+### Implementation Checkpoints
+
+- File upload and validation working
+- Text extraction successful
+- Section selection functional
+- AI integration complete
+- Basic error handling in place
+
+### Core Functions
+
+1. Upload Word Resume
+2. Paste Job Description
+3. Select Sections (Summary, Experience, etc.)
+4. Generate Tailored Resume Using One AI Model (OpenAI)
+
+### Instructions to Cursor AI
+
+"Cursor AI, you are in senior dev mode. Generate a lean app.py that accomplishes the following MVP requirements with minimal code and strong clarity."
+
+#### Proposed MVP Code
+
+```python
 import streamlit as st
 import openai
 from docx import Document
@@ -88,7 +117,7 @@ if st.button("Tailor Resume"):
         resume_text = "\n".join(p.text for p in doc.paragraphs)
 
         prompt_text = (
-            f"Here’s my resume:\n{resume_text}\n\n"
+            f"Here's my resume:\n{resume_text}\n\n"
             f"Please tailor these sections: {', '.join(sections)} "
             f"for this job:\n{job_description}"
         )
@@ -104,68 +133,97 @@ if st.button("Tailor Resume"):
             st.error(f"AI Error: {str(e)}")
     else:
         st.warning("Please upload a resume, enter a job description, and select sections.")
-Run:
-streamlit run app.py
-Performance Note
-•	For small .docx files, this should be well under 3 seconds to parse.
-•	The OpenAI API call typically responds within 5–8 seconds for max_tokens=1000.
- 
-4. Iteration 1: Multi-AI Model Selector & API Key Management
-Dependencies
-•	Requires: MVP (Core functionality)
-•	Optional: None
-•	Next: Iteration 2 (Data Collection)
-Success Criteria
-1.	Functionality
-o	All API keys load securely
-o	Model selection works
-o	Error handling for invalid keys
-2.	Security
-o	No keys in code
-o	Proper environment validation
-o	Secure key storage
-3.	Performance
-o	Switching models quickly
-o	Minimal overhead in UI
-4.	Testing
-o	Manual check: Attempt to pick an invalid or missing API key, see if the app warns gracefully.
-Implementation Checkpoints
-•	Environment setup complete
-•	API key validation working
-•	Model selection functional
-•	Error handling implemented
-Why?
-•	Different AI engines offer unique strengths for resume tailoring
-•	Secure API key management is crucial for production deployment
-•	Senior Dev Persona: Implement robust yet minimal security measures
-API Key Management
-1.	Create a .env.example template: 
-2.	OPENAI_API_KEY=sk-your-key-here
-3.	ANTHROPIC_API_KEY=sk-ant-your-key-here
-4.	DEEPMIND_API_KEY=your-key-here  # When available
-5.	Add to .gitignore: 
-6.	.env
-7.	Load keys securely: 
-8.	from dotenv import load_dotenv
-9.	import os
-10.	load_dotenv()
-11.	
-12.	def init_ai_client(provider: str):
-13.	    """Initialize AI client with appropriate API key."""
-14.	    if provider == "OpenAI":
-15.	        api_key = os.getenv("OPENAI_API_KEY", "").strip()
-16.	        if not api_key or not api_key.startswith("sk-"):
-17.	            raise ValueError("Invalid OpenAI API key")
-18.	        return openai
-19.	    elif provider == "Anthropic":
-20.	        import anthropic
-21.	        api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
-22.	        if not api_key or not api_key.startswith("sk-ant-"):
-23.	            raise ValueError("Invalid Anthropic API key")
-24.	        return anthropic.Client(api_key=api_key)
-25.	    else:
-26.	        raise ValueError(f"Unsupported provider: {provider}")
-Model Selection Process
+```
+
+#### Run
+
+- `streamlit run app.py`
+
+#### Performance Note
+
+- For small .docx files, this should be well under 3 seconds to parse.
+- The OpenAI API call typically responds within 5–8 seconds for max_tokens=1000.
+
+## 4. Iteration 1: Multi-AI Model Selector & API Key Management
+
+### Dependencies
+
+- Requires: MVP (Core functionality)
+- Optional: None
+- Next: Iteration 2 (Data Collection)
+
+### Success Criteria
+
+#### 1. Functionality
+
+- All API keys load securely
+- Model selection works
+- Error handling for invalid keys
+
+#### 2. Security
+
+- No keys in code
+- Proper environment validation
+- Secure key storage
+
+#### 3. Performance
+
+- Switching models quickly
+- Minimal overhead in UI
+
+#### 4. Testing
+
+- Manual check: Attempt to pick an invalid or missing API key, see if the app warns gracefully.
+
+### Implementation Checkpoints
+
+- Environment setup complete
+- API key validation working
+- Model selection functional
+- Error handling implemented
+
+### Why?
+
+- Different AI engines offer unique strengths for resume tailoring
+- Secure API key management is crucial for production deployment
+- Senior Dev Persona: Implement robust yet minimal security measures
+
+### API Key Management
+
+1. Create a .env.example template:
+   - `OPENAI_API_KEY=sk-your-key-here`
+   - `ANTHROPIC_API_KEY=sk-ant-your-key-here`
+   - `DEEPMIND_API_KEY=your-key-here  # When available`
+2. Add to .gitignore:
+   - `.env`
+3. Load keys securely:
+
+```python
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+def init_ai_client(provider: str):
+    """Initialize AI client with appropriate API key."""
+    if provider == "OpenAI":
+        api_key = os.getenv("OPENAI_API_KEY", "").strip()
+        if not api_key or not api_key.startswith("sk-"):
+            raise ValueError("Invalid OpenAI API key")
+        return openai
+    elif provider == "Anthropic":
+        import anthropic
+        api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+        if not api_key or not api_key.startswith("sk-ant-"):
+            raise ValueError("Invalid Anthropic API key")
+        return anthropic.Client(api_key=api_key)
+    else:
+        raise ValueError(f"Unsupported provider: {provider}")
+```
+
+### Model Selection Process
+
+```python
 MODELS = {
     "OpenAI GPT-4": {
         "provider": "OpenAI",
@@ -199,7 +257,11 @@ with st.sidebar:
     )
     config = MODELS[selected_model]
     st.markdown(f"### Model Profile\n{config['description']}")
-Resume Tailoring Implementation
+```
+
+### Resume Tailoring Implementation
+
+```python
 def tailor_resume(resume_text: str, job_description: str, sections: list, config: dict) -> str:
     """Tailor resume using selected AI model."""
     try:
@@ -226,38 +288,54 @@ def tailor_resume(resume_text: str, job_description: str, sections: list, config
 
     except Exception as e:
         return f"Error: {str(e)}"
-Testing
-•	Provide valid keys in .env.
-•	Manual test: Switch from “OpenAI GPT-4” to “Anthropic Claude” in the sidebar. Attempt a resume tailoring and confirm no code changes needed.
-•	Performance: Minimal difference in speed if you switch providers.
- 
-User Feedback:
-“Thanks for the detail so far. That is helpful. Please continue with the next iterations and added code examples.”
- 
-5. Iteration 2: Data Collection for Fine-Tuning
-Dependencies
-•	Requires: Iteration 1 (API Key Management)
-•	Next: Iteration 3 (Job Board Integration)
-Success Criteria
-1.	Data Collection
-o	Secure data storage
-o	Proper anonymization
-o	User opt-in working
-2.	Performance
-o	No UI lag during collection
-o	Minimal storage usage
-o	Efficient data format (e.g., JSON Lines)
-3.	Testing
-o	Manual check: Tailor a sample resume, opt in to share data, and confirm the anonymized data is appended to a training_data.jsonl file without errors.
-Implementation Checkpoints
-•	Data storage mechanism working
-•	Opt-in functionality complete
-•	Anonymization implemented
-•	Error handling in place
-Why?
-•	Over time, the app learns from real usage, improving suggestions.
-•	Senior Dev Persona: minimal but robust data capture.
-Implementation Sketch
+```
+
+### Testing
+
+- Provide valid keys in .env.
+- Manual test: Switch from "OpenAI GPT-4" to "Anthropic Claude" in the sidebar. Attempt a resume tailoring and confirm no code changes needed.
+- Performance: Minimal difference in speed if you switch providers.
+
+## 5. Iteration 2: Data Collection for Fine-Tuning
+
+### Dependencies
+
+- Requires: Iteration 1 (API Key Management)
+- Next: Iteration 3 (Job Board Integration)
+
+### Success Criteria
+
+#### 1. Data Collection
+
+- Secure data storage
+- Proper anonymization
+- User opt-in working
+
+#### 2. Performance
+
+- No UI lag during collection
+- Minimal storage usage
+- Efficient data format (e.g., JSON Lines)
+
+#### 3. Testing
+
+- Manual check: Tailor a sample resume, opt in to share data, and confirm the anonymized data is appended to a training_data.jsonl file without errors.
+
+### Implementation Checkpoints
+
+- Data storage mechanism working
+- Opt-in functionality complete
+- Anonymization implemented
+- Error handling in place
+
+### Why?
+
+- Over time, the app learns from real usage, improving suggestions.
+- Senior Dev Persona: minimal but robust data capture.
+
+### Implementation Sketch
+
+```python
 import json
 import streamlit as st
 
@@ -283,33 +361,56 @@ if st.button("Tailor Resume"):
             st.success("Training data saved (anonymized).")
         except Exception as e:
             st.error(f"Could not save training data: {e}")
-Performance Note: Saving small JSON lines is typically negligible in CPU/memory usage. The main cost is still the AI inference.
-Privacy Consideration: We only store partial text ([:300]) to limit sensitive data. If more robust privacy is needed, consider advanced anonymization (e.g., removing names, addresses).
- 
-6. Iteration 3: Job Board Integration
-Dependencies
-•	Requires: Iteration 2 (Data Collection)
-•	Next: Iteration 4 (Preserving Formatting)
-Success Criteria
-1.	Integration
-o	Successful URL parsing
-o	Accurate job description extraction
-o	Proper error handling
-2.	Performance
-o	Response time < 5 seconds for typical job pages
-o	Graceful failure handling
-o	Clear user feedback
-3.	Testing
-o	Manual check: Provide a valid Seek.com.au job URL, verify the job description is extracted. Then tailor the resume using that fetched text.
-Implementation Checkpoints
-•	URL validation working
-•	Job description extraction functional
-•	Error handling implemented
-•	User feedback system in place
-Why?
-•	Automate job description fetching from sites like seek.com.au.
-•	If scraping fails, handle gracefully.
-Implementation Sketch
+```
+
+#### Performance Note
+
+- Saving small JSON lines is typically negligible in CPU/memory usage. The main cost is still the AI inference.
+
+#### Privacy Consideration
+
+- We only store partial text ([:300]) to limit sensitive data. If more robust privacy is needed, consider advanced anonymization (e.g., removing names, addresses).
+
+## 6. Iteration 3: Job Board Integration
+
+### Dependencies
+
+- Requires: Iteration 2 (Data Collection)
+- Next: Iteration 4 (Preserving Formatting)
+
+### Success Criteria
+
+#### 1. Integration
+
+- Successful URL parsing
+- Accurate job description extraction
+- Proper error handling
+
+#### 2. Performance
+
+- Response time < 5 seconds for typical job pages
+- Graceful failure handling
+- Clear user feedback
+
+#### 3. Testing
+
+- Manual check: Provide a valid Seek.com.au job URL, verify the job description is extracted. Then tailor the resume using that fetched text.
+
+### Implementation Checkpoints
+
+- URL validation working
+- Job description extraction functional
+- Error handling implemented
+- User feedback system in place
+
+### Why?
+
+- Automate job description fetching from sites like seek.com.au.
+- If scraping fails, handle gracefully.
+
+### Implementation Sketch
+
+```python
 import requests
 from bs4 import BeautifulSoup
 
@@ -336,37 +437,57 @@ if job_url:
         st.text_area("Fetched Job Description", fetched_desc, height=200)
 
 # Then pass fetched_desc into your tailoring prompt if desired
-Performance Note: Simple GET requests plus parsing are typically under 1 second. If Seek’s structure changes, update or remove this feature swiftly (fail fast).
-Testing Tip: Use known job URLs and invalid URLs to confirm error handling.
- 
-7. Iteration 7: "WOW" Factor & Enhanced User Experience
-Dependencies
-•	Requires: Iteration 6 (Flexible Selection)
-•	Next: Iteration 8 (Job Search & Salary Integration)
-Success Criteria
-1.	User Interface
-o	Modern, clean design with consistent styling
-o	Responsive interactions and smooth transitions
-o	Intuitive controls with inline editing capabilities
-o	Clear visual hierarchy and feedback
-2.	Features
-o	Real-time ATS scoring with keyword matching
-o	Live previews of tailored content
-o	Inline editing with change tracking
-o	One-click optimization
-3.	Performance
-o	Sub-second response times for UI interactions
-o	Minimal lag during multi-paragraph edits
-o	Efficient state management
-o	Smooth animations and transitions
-4.	Testing
-o	Verify ATS scoring accuracy
-o	Test responsiveness across screen sizes
-o	Validate state management
-o	Check animation performance
+```
 
-Implementation Details
-1. ATS Score Implementation
+#### Performance Note
+
+- Simple GET requests plus parsing are typically under 1 second. If Seek's structure changes, update or remove this feature swiftly (fail fast).
+
+#### Testing Tip
+
+- Use known job URLs and invalid URLs to confirm error handling.
+
+## 7. Iteration 7: "WOW" Factor & Enhanced User Experience
+
+### Dependencies
+
+- Requires: Iteration 6 (Flexible Selection)
+- Next: Iteration 8 (Job Search & Salary Integration)
+
+### Success Criteria
+
+#### 1. User Interface
+
+- Modern, clean design with consistent styling
+- Responsive interactions and smooth transitions
+- Intuitive controls with inline editing capabilities
+- Clear visual hierarchy and feedback
+
+#### 2. Features
+
+- Real-time ATS scoring with keyword matching
+- Live previews of tailored content
+- Inline editing with change tracking
+- One-click optimization
+
+#### 3. Performance
+
+- Sub-second response times for UI interactions
+- Minimal lag during multi-paragraph edits
+- Efficient state management
+- Smooth animations and transitions
+
+#### 4. Testing
+
+- Verify ATS scoring accuracy
+- Test responsiveness across screen sizes
+- Validate state management
+- Check animation performance
+
+### Implementation Details
+
+#### 1. ATS Score Implementation
+
 ```python
 def calculate_ats_score(resume_text: str, job_description: str) -> float:
     """Calculate ATS match score based on keyword overlap."""
@@ -377,7 +498,7 @@ def calculate_ats_score(resume_text: str, job_description: str) -> float:
 def extract_keywords(text: str) -> set:
     """Extract relevant keywords from text."""
     # Add advanced NLP processing here if needed
-    words = set(word.strip().lower() for word in text.split() 
+    words = set(word.strip().lower() for word in text.split()
                if len(word) > 3 and word.isalnum())
     return words
 
@@ -388,7 +509,8 @@ if resume_text and job_description:
              delta=f"{score - previous_score:.1f}%" if 'previous_score' in locals() else None)
 ```
 
-2. Inline Editing Component
+#### 2. Inline Editing Component
+
 ```python
 def create_editable_section(section_text: str, section_name: str):
     """Create an inline-editable section with change tracking."""
@@ -406,17 +528,18 @@ def create_editable_section(section_text: str, section_name: str):
     return edited_text
 ```
 
-3. One-Click Optimization
+#### 3. One-Click Optimization
+
 ```python
 def optimize_resume(resume_text: str, job_description: str) -> dict:
     """Automatically optimize resume sections."""
     sections = detect_sections(resume_text)
     optimized = {}
-    
+
     for section, content in sections.items():
         # Use AI to optimize each section
         optimized[section] = tailor_section(content, job_description)
-    
+
     return optimized
 
 if st.button("One-Click Optimize"):
@@ -425,30 +548,43 @@ if st.button("One-Click Optimize"):
         display_side_by_side(resume_text, optimized)
 ```
 
-8. Iteration 8: Job Search & Salary Integration
-Dependencies
-•	Requires: Iteration 7 (WOW Factor)
-•	Next: Iteration 9 (AI Job Recommendations)
-Success Criteria
-1.	Job Search
-o	Efficient seek.com.au integration
-o	Accurate salary filtering
-o	Clean job listing display
-2.	User Profile
-o	Secure credential storage
-o	Salary expectation management
-o	Search preference persistence
-3.	Performance
-o	Fast job search results
-o	Efficient data caching
-o	Smooth UI updates
-4.	Testing
-o	Verify job search accuracy
-o	Test salary filtering
-o	Validate credential security
+## 8. Iteration 8: Job Search & Salary Integration
 
-Implementation Details
-1. Job Search Integration
+### Dependencies
+
+- Requires: Iteration 7 (WOW Factor)
+- Next: Iteration 9 (AI Job Recommendations)
+
+### Success Criteria
+
+#### 1. Job Search
+
+- Efficient seek.com.au integration
+- Accurate salary filtering
+- Clean job listing display
+
+#### 2. User Profile
+
+- Secure credential storage
+- Salary expectation management
+- Search preference persistence
+
+#### 3. Performance
+
+- Fast job search results
+- Efficient data caching
+- Smooth UI updates
+
+#### 4. Testing
+
+- Verify job search accuracy
+- Test salary filtering
+- Validate credential security
+
+### Implementation Details
+
+#### 1. Job Search Integration
+
 ```python
 def fetch_jobs(role: str, location: str, min_salary: float) -> list:
     """Fetch and filter jobs from seek.com.au."""
@@ -457,7 +593,7 @@ def fetch_jobs(role: str, location: str, min_salary: float) -> list:
         # Implement seek.com.au API or scraping logic
         raw_jobs = fetch_from_seek(role, location)
         # Filter by salary
-        jobs = [job for job in raw_jobs 
+        jobs = [job for job in raw_jobs
                if estimate_salary(job) >= min_salary]
     except Exception as e:
         st.error(f"Job search error: {e}")
@@ -467,20 +603,21 @@ def fetch_jobs(role: str, location: str, min_salary: float) -> list:
 with st.sidebar:
     role = st.text_input("Job Role", "Software Engineer")
     location = st.text_input("Location", "Melbourne")
-    salary = st.number_input("Minimum Salary (AUD)", 
+    salary = st.number_input("Minimum Salary (AUD)",
                            value=80000, step=5000)
-    
+
 if st.button("Search Jobs"):
     jobs = fetch_jobs(role, location, salary)
     display_job_results(jobs)
 ```
 
-2. Salary Management
+#### 2. Salary Management
+
 ```python
 class SalaryManager:
     def __init__(self):
         self.load_preferences()
-    
+
     def load_preferences(self):
         """Load user's salary preferences."""
         if 'salary_prefs' not in st.session_state:
@@ -489,7 +626,7 @@ class SalaryManager:
                 'expected': 0,
                 'history': []
             }
-    
+
     def update_salary(self, current: float, expected: float):
         """Update salary preferences."""
         st.session_state.salary_prefs.update({
@@ -497,7 +634,7 @@ class SalaryManager:
             'expected': expected,
             'history': self.get_history() + [(current, expected)]
         })
-    
+
     def get_history(self) -> list:
         """Get salary history."""
         return st.session_state.salary_prefs.get('history', [])
@@ -511,26 +648,37 @@ if st.button("Update Salary Preferences"):
     salary_mgr.update_salary(current, expected)
 ```
 
-9. Iteration 9: AI Job Recommendations
-Dependencies
-•	Requires: Iteration 8 (Job Search)
-•	Next: Iteration 10 (Auto-Fix Integration)
-Success Criteria
-1.	AI Matching
-o	Accurate skill matching
-o	Salary alignment scoring
-o	Combined relevancy metrics
-2.	Performance
-o	Efficient similarity calculations
-o	Quick ranking updates
-o	Smooth UI feedback
-3.	Testing
-o	Validate match accuracy
-o	Test ranking consistency
-o	Verify performance
+## 9. Iteration 9: AI Job Recommendations
 
-Implementation Details
-1. Job-Resume Matching
+### Dependencies
+
+- Requires: Iteration 8 (Job Search)
+- Next: Iteration 10 (Auto-Fix Integration)
+
+### Success Criteria
+
+#### 1. AI Matching
+
+- Accurate skill matching
+- Salary alignment scoring
+- Combined relevancy metrics
+
+#### 2. Performance
+
+- Efficient similarity calculations
+- Quick ranking updates
+- Smooth UI feedback
+
+#### 3. Testing
+
+- Validate match accuracy
+- Test ranking consistency
+- Verify performance
+
+### Implementation Details
+
+#### 1. Job-Resume Matching
+
 ```python
 def compute_job_match(resume_text: str, job_posting: dict) -> dict:
     """Calculate comprehensive job match metrics."""
@@ -539,7 +687,7 @@ def compute_job_match(resume_text: str, job_posting: dict) -> dict:
         job_posting.get('salary_range', [0, 0]),
         st.session_state.salary_prefs['expected']
     )
-    
+
     return {
         'skill_match': skill_score,
         'salary_fit': salary_score,
@@ -569,26 +717,37 @@ for job in jobs:
     st.write(f"Salary Fit: {match['salary_fit']:.2%}")
 ```
 
-10. Iteration 10: Auto-Fix Integration
-Dependencies
-•	Requires: Iteration 9 (AI Job Recommendations)
-•	Next: Future Enhancements
-Success Criteria
-1.	Auto-Fix
-o	Dependency management
-o	Code formatting
-o	Error correction
-2.	Performance
-o	Quick fixes
-o	Minimal disruption
-o	Efficient testing
-3.	Testing
-o	Verify fix accuracy
-o	Test reversion capability
-o	Validate stability
+## 10. Iteration 10: Auto-Fix Integration
 
-Implementation Details
-1. Auto-Fix Script
+### Dependencies
+
+- Requires: Iteration 9 (AI Job Recommendations)
+- Next: Future Enhancements
+
+### Success Criteria
+
+#### 1. Auto-Fix
+
+- Dependency management
+- Code formatting
+- Error correction
+
+#### 2. Performance
+
+- Quick fixes
+- Minimal disruption
+- Efficient testing
+
+#### 3. Testing
+
+- Verify fix accuracy
+- Test reversion capability
+- Validate stability
+
+### Implementation Details
+
+#### 1. Auto-Fix Script
+
 ```python
 def run_auto_fix():
     """Run the auto-fix routine."""
@@ -609,7 +768,7 @@ def check_dependencies():
         "requests",
         "beautifulsoup4"
     ]
-    
+
     for pkg in required:
         try:
             importlib.import_module(pkg)
@@ -635,29 +794,39 @@ def handle_fix_error(error: Exception):
     logging.error(f"Auto-fix failed: {error}")
 ```
 
-Beyond Iteration 10: Future Enhancements
-1. Role-Specific AI Resume
-- Automatic achievement highlighting based on role
-- Industry-specific keyword optimization
-- Custom formatting per role
+## Beyond Iteration 10: Future Enhancements
+
+1. Enhanced Resume Tailoring Features
+
+   - Model-specific prompt templates optimized for each model's strengths
+   - Feedback loop with success metrics for model performance
+   - Advanced persona matching with temporal skill analysis
+   - Cross-section consistency validation
+   - Industry-specific terminology verification
+   - Format retention and structure preservation
+   - Automatic achievement highlighting based on role
+   - Industry-specific keyword optimization
+   - Custom formatting per role
 
 2. Advanced CV Parsing
-- Real-time tailoring as job descriptions change
-- Smart section detection and organization
-- Format preservation across edits
+
+   - Real-time tailoring as job descriptions change
+   - Smart section detection and organization
+   - Format preservation across edits
 
 3. Auto-Apply Integration
-- One-click job applications
-- Application tracking
-- Follow-up management
+
+   - One-click job applications
+   - Application tracking
+   - Follow-up management
 
 4. Analytics Dashboard
-- Application success rates
-- Skill gap analysis
-- Salary trend tracking
+   - Application success rates
+   - Skill gap analysis
+   - Salary trend tracking
 
 By carefully extending the existing structure, you maintain consistency, keep the code minimal, and produce a robust new feature set for job search & AI-based matching—while also automating error resolution for a frictionless developer experience.
 
 Happy Building, and remember:
-“Cursor AI, remain the 20+ year senior dev: keep solutions minimal, efficient, and user-centered for maximum impact!”
 
+"Cursor AI, remain the 20+ year senior dev: keep solutions minimal, efficient, and user-centered for maximum impact!"

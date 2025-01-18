@@ -1,301 +1,84 @@
-"""Job board integration for resume tailoring app."""
+"""Job board integration for fetching job descriptions."""
 
 import logging
-import time
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Dict, List, Optional
-from urllib.parse import urlparse
-
-import requests
+from typing import Dict
+import aiohttp
 from bs4 import BeautifulSoup
-from bs4.element import Tag
 
-from src.exceptions import JobBoardError
-
-# Setup logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("resume_tailor")
 
 
-@dataclass
-class JobDetails:
-    """Container for job posting details."""
+class JobBoardClient:
+    """Client for interacting with job boards."""
 
-    title: str
-    company: str
-    location: str
-    description: str
-    requirements: List[str]
-    responsibilities: List[str]
-    qualifications: List[str]
-
-
-class JobBoardScraper:
-    """Wrapper for job board integrations with storage management."""
-
-    def __init__(self, storage_path: str = "uploads"):
-        """Initialize scraper with storage path."""
-        self.storage_path = Path(storage_path)
-        self.storage_path.mkdir(exist_ok=True)
-        self.manager = JobBoardManager()
-
-    def fetch_job_description(self, url: str) -> Optional[str]:
-        """Fetch job description and store it."""
-        try:
-            job_details = self.manager.fetch_job_details(url)
-            if job_details:
-                # Store job description
-                job_path = self.storage_path / "Fetched_JD.md"
-                with open(job_path, "w") as f:
-                    f.write(job_details.description)
-                return job_details.description
-            return None
-        except JobBoardError:
-            raise
-        except Exception as e:
-            logger.error(f"Error fetching job description: {str(e)}")
-            return None
-
-    def get_supported_sites(self) -> List[str]:
-        """Get list of supported job board sites."""
-        return self.manager.get_supported_sites()
-
-
-class JobBoardManager:
-    """Manager for job board integrations."""
-
-    def __init__(self):
-        """Initialize with supported scrapers."""
-        self.scrapers: Dict[str, "SeekScraper"] = {"seek": SeekScraper()}
-        self.max_retries = 3
-        self.retry_delay = 1  # seconds
-
-    def is_supported_url(self, url: str) -> bool:
-        """Check if URL is supported."""
-        return any(scraper.can_handle(url) for scraper in self.scrapers.values())
-
-    def fetch_job_details(self, url: str) -> Optional[JobDetails]:
-        """Fetch job description with automatic site detection and retry
-        logic."""
-        try:
-            # Validate URL format
-            if not url.startswith(("http://", "https://")):
-                raise JobBoardError("Invalid URL format. Must start with http:// or https://")
-
-            domain = urlparse(url).netloc.lower()
-            if not domain:
-                raise JobBoardError("Invalid URL: missing domain")
-
-            # Find matching scraper
-            matching_scrapers = [
-                (site, scraper)
-                for site, scraper in self.scrapers.items()
-                if site in domain and scraper.can_handle(url)
-            ]
-
-            if not matching_scrapers:
-                supported_sites = ", ".join(self.scrapers.keys())
-                raise JobBoardError(
-                    f"Unsupported job board: {domain}.\n" f"Supported sites: {supported_sites}"
-                )
-
-            # Try each matching scraper with retries
-            errors = []
-            for site, scraper in matching_scrapers:
-                for attempt in range(self.max_retries):
-                    try:
-                        return scraper.fetch(url)
-                    except Exception as e:
-                        msg = f"Attempt {attempt + 1} failed for {site}"
-                        logger.warning(f"{msg}: {str(e)}")
-                        if attempt < self.max_retries - 1:
-                            time.sleep(self.retry_delay)
-                        errors.append(f"{site}: {str(e)}")
-
-            # If all retries failed
-            error_details = "\n".join(errors)
-            msg = (
-                f"Failed to fetch job description after "
-                f"{self.max_retries} attempts:\n{error_details}"
-            )
-            raise JobBoardError(msg)
-
-        except JobBoardError:
-            raise
-        except Exception as e:
-            msg = f"Failed to fetch job description: {str(e)}"
-            logger.error(f"Unexpected error: {str(e)}")
-            raise JobBoardError(msg)
-
-    def get_supported_sites(self) -> List[str]:
-        """Get list of supported job board sites."""
-        return list(self.scrapers.keys())
-
-
-class SeekScraper:
-    """Scraper for Seek job postings."""
-
-    def __init__(self):
-        """Initialize scraper with optimized settings."""
+    def __init__(self) -> None:
+        """Initialize job board client."""
         self.headers = {
             "User-Agent": (
                 "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/91.0.4472.114 Safari/537.36"
-            ),
-            "Accept-Encoding": "gzip, deflate",  # Enable compression
-            "Connection": "keep-alive",  # Enable connection reuse
+            )
         }
-        self.session = requests.Session()  # Reuse connections
-        self.timeout = 5  # 5 second timeout
 
-    def can_handle(self, url: str) -> bool:
-        """Check if URL is from Seek."""
-        return "seek.com.au" in url.lower()
+    async def fetch_job_description(self, url: str) -> Dict[str, str]:
+        """Fetch job description from supported job boards.
 
-    def fetch(self, url: str) -> Optional[JobDetails]:
-        """Fetch and parse Seek job posting."""
+        Args:
+            url: URL of the job posting
+
+        Returns:
+            Dictionary containing job details
+
+        Raises:
+            ValueError: If job details cannot be extracted or URL is not supported
+        """
         try:
-            # Use session for connection pooling
-            response = self.session.get(
-                url, headers=self.headers, timeout=self.timeout, stream=True  # Enable streaming
-            )
-            response.raise_for_status()
+            # Basic URL validation
+            if not url.startswith(('http://', 'https://')):
+                logger.warning("Invalid URL format: %s", url)
+                raise ValueError("Invalid URL format - must start with http:// or https://")
 
-            # Stream and parse content in chunks
-            content = []
-            for chunk in response.iter_content(chunk_size=8192, decode_unicode=True):
-                if chunk:
-                    content.append(chunk)
+            if "seek.com.au" not in url:
+                logger.warning("Unsupported job board URL: %s", url)
+                raise ValueError("Unsupported job board - only seek.com.au is supported")
 
-            soup = BeautifulSoup("".join(content), "html.parser")
-
-            # Extract job details
-            h1 = soup.find("h1")
-            title = h1.text.strip() if h1 else "Unknown Title"
-
-            company_link = soup.find("a", {"data-automation": "company-link"})
-            company = company_link.text.strip() if company_link else "Unknown Company"
-
-            location_span = soup.find("span", {"data-automation": "job-location"})
-            location = location_span.text.strip() if location_span else "Unknown Location"
-
-            # Get job description
-            description_div = soup.find("div", {"data-automation": "jobAdDetails"})
-            if not description_div:
-                return None
-
-            description = description_div.get_text("\n", strip=True)
-
-            # Extract lists
-            requirements = []
-            responsibilities = []
-            qualifications = []
-
-            # Find all lists in the description
-            lists: List[Tag] = []
-            if hasattr(description_div, "find_all"):
-                find = description_div.find_all
-                lists.extend(find("ul"))
-                for ul in lists:
-                    if hasattr(ul, "find_all"):
-                        items = [li.text.strip() for li in ul.find_all("li")]
-                        # Categorize based on preceding header
-                        prev = ul.find_previous(["h2", "h3", "strong"])
-                        if prev and hasattr(prev, "text"):
-                            header = prev.text.lower()
-                            if "requirement" in header:
-                                requirements.extend(items)
-                            elif "responsibilit" in header:
-                                responsibilities.extend(items)
-                            elif "qualification" in header:
-                                qualifications.extend(items)
-
-            return JobDetails(
-                title=title,
-                company=company,
-                location=location,
-                description=description,
-                requirements=requirements,
-                responsibilities=responsibilities,
-                qualifications=qualifications,
-            )
-
+            return await self._fetch_from_seek(url)
         except Exception as e:
-            logger.error(f"Error fetching job details: {str(e)}")
-            return None
+            logger.error(f"Error fetching job description: {str(e)}")
+            raise
 
-    def _log_html_preview(self, html: str) -> None:
-        """Log a preview of HTML content in chunks."""
-        logger.debug("HTML preview:")
-        text = html[:1000]
-        chunk_size = 200
-        for i in range(0, len(text), chunk_size):
-            logger.debug(text[i : i + chunk_size])
+    async def _fetch_from_seek(self, url: str) -> Dict[str, str]:
+        """Fetch job description from seek.com.au.
 
-    def _make_request(self, url: str) -> str:
-        """Make HTTP request with error handling."""
-        try:
-            # Add more browser-like headers
-            # Use latest Chrome on macOS
-            headers = {
-                "User-Agent": (
-                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/121.0.0.0 Safari/537.36"
-                ),
-                # Parse URL for dynamic host header
-                "Host": urlparse(url).netloc,
-                # Standard browser headers
-                "Accept": ("text/html,application/xhtml+xml,application/xml;" "q=0.9,*/*;q=0.8"),
-                "Accept-Language": "en-AU,en;q=0.9",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Connection": "keep-alive",
-                "Upgrade-Insecure-Requests": "1",
-                "Cache-Control": "no-cache",
-                "Cookie": "",  # Empty cookie to avoid tracking
-                # Security headers
-                "Sec-Fetch-Dest": "document",
-                "Sec-Fetch-Mode": "navigate",
-                "Sec-Fetch-Site": "none",
-                "Sec-Fetch-User": "?1",
-            }
+        Args:
+            url: Seek job posting URL
 
-            # Increase timeout and allow redirects
-            response = requests.get(url, headers=headers, timeout=30, allow_redirects=True)
-            response.raise_for_status()
+        Returns:
+            Dictionary containing job details
 
-            # Log response info for debugging
-            logger.debug(f"Response status: {response.status_code}")
-            logger.debug(f"Response headers: {response.headers}")
+        Raises:
+            ValueError: If job details cannot be extracted
+        """
+        async with aiohttp.ClientSession(headers=self.headers) as session:
+            async with session.get(url) as response:
+                response.raise_for_status()
+                html = await response.text()
 
-            # Check if we got a valid response
-            if not response.text:
-                raise JobBoardError("Empty response from server")
+        soup = BeautifulSoup(html, "html.parser")
 
-            # Parse response
-            soup = BeautifulSoup(response.text, "html.parser")
+        # Extract job details
+        title = soup.find("h1", {"data-automation": "job-detail-title"})
+        company = soup.find("span", {"data-automation": "advertiser-name"})
+        location = soup.find("span", {"data-automation": "job-detail-location"})
+        description = soup.find("div", {"data-automation": "jobAdDetails"})
 
-            # Log HTML preview for debugging
-            if logger.isEnabledFor(logging.DEBUG):
-                self._log_html_preview(response.text)
+        if not all([title, description]):
+            raise ValueError("Could not extract required job details")
 
-            # Look for job content markers
-            has_details = soup.find(attrs={"data-automation": "jobAdDetails"})
-            has_desc = soup.find(attrs={"data-automation": "jobDescription"})
-            has_class = soup.find(attrs={"class": "job-description"})
-
-            # Check if any marker was found
-            job_content_found = bool(has_details or has_desc or has_class)
-
-            if not job_content_found:
-                raise JobBoardError("Could not find job content")
-
-            return response.text
-
-        except requests.RequestException as e:
-            logger.error(f"Request failed: {str(e)}")
-            if hasattr(e, "response") and e.response is not None:
-                logger.error(f"Response status: {e.response.status_code}")
-                logger.error(f"Response headers: {e.response.headers}")
-            raise JobBoardError(f"Failed to fetch job posting: {str(e)}")
+        return {
+            "title": title.text.strip(),
+            "company": company.text.strip() if company else "",
+            "location": location.text.strip() if location else "",
+            "description": description.get_text(separator="\n").strip()
+        }

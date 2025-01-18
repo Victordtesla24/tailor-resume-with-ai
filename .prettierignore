@@ -1,0 +1,24 @@
+# Ignore artifacts:
+build
+coverage
+# Ignore artifacts:
+build
+coverage
+
+# Ignore all HTML files:
+**/*.html
+**/.git
+**/.svn
+**/.hg
+**/node_modules
+**/.git
+**/.svn
+**/.hg
+**/.venv
+**/venv
+**/.env
+**/env
+**/.tox
+**/*
+**/*.egg-info
+

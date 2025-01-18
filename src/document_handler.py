@@ -7,9 +7,13 @@ from docx import Document
 from docx.document import Document as DocumentType
 
 from src.utils import (
-    CHUNK_SIZE, MAX_INPUT_SIZE, MAX_MEMORY_MB,
-    get_memory_usage, track_performance,
-    validate_file_format, validate_input_size
+    CHUNK_SIZE,
+    MAX_INPUT_SIZE,
+    MAX_MEMORY_MB,
+    get_memory_usage,
+    track_performance,
+    validate_file_format,
+    validate_input_size,
 )
 
 logger = logging.getLogger("resume_tailor")

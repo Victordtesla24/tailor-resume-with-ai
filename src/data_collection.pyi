@@ -34,8 +34,15 @@ class DataCollector:
         self,
         resume_text: str,
         job_description: str,
-        tailored_output: str,
-        extra_metadata: Dict[str, Any],
+        tailored_text: str,
+        metadata: Dict[str, Any],
+        sections: List[str],
+        ats_score: float,
+        *,
+        section_scores: Optional[Dict[str, float]] = None,
+        format_validation: Optional[Dict[str, bool]] = None,
+        keyword_matches: Optional[Dict[str, int]] = None,
+        template_id: Optional[str] = None,
     ) -> None: ...
 
 class DataRetentionManager:

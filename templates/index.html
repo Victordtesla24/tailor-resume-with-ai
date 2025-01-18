@@ -1,169 +1,198 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart Resume Tailor</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        textarea, select {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        textarea {
-            min-height: 200px;
-        }
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-        .primary {
-            background-color: #007bff;
-            color: white;
-        }
-        .secondary {
-            background-color: #6c757d;
-            color: white;
-        }
-        .results-section {
-            margin-top: 30px;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            display: none;
-        }
-        .download-button {
-            display: none;
-            margin-top: 20px;
-            background-color: #28a745;
-            color: white;
-        }
-        .error {
-            color: #dc3545;
-            margin-top: 10px;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      textarea,
+      select {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      textarea {
+        min-height: 200px;
+      }
+      button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 10px;
+      }
+      .primary {
+        background-color: #007bff;
+        color: white;
+      }
+      .secondary {
+        background-color: #6c757d;
+        color: white;
+      }
+      .results-section {
+        margin-top: 30px;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        display: none;
+      }
+      .download-button {
+        display: none;
+        margin-top: 20px;
+        background-color: #28a745;
+        color: white;
+      }
+      .error {
+        color: #dc3545;
+        margin-top: 10px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Smart Resume Tailor</h1>
-    <p>Upload your resume and paste the job description to get a tailored version of your resume.</p>
+    <p>
+      Upload your resume and paste the job description to get a tailored version of your resume.
+    </p>
 
     <form id="resume-form">
-        <div class="form-group">
-            <label for="{{ components.form.resume_input.id }}">{{ components.form.resume_input.label }}</label>
-            <input type="file" id="{{ components.form.resume_input.id }}" accept="{{ components.form.resume_input.accept }}" required>
-        </div>
+      <div class="form-group">
+        <label for="{{ components.form.resume_input.id }}"
+          >{{ components.form.resume_input.label }}</label
+        >
+        <input
+          type="file"
+          id="{{ components.form.resume_input.id }}"
+          accept="{{ components.form.resume_input.accept }}"
+          required
+        />
+      </div>
 
-        <div class="form-group">
-            <label for="{{ components.form.job_description.id }}">{{ components.form.job_description.label }}</label>
-            <textarea id="{{ components.form.job_description.id }}" 
-                      placeholder="{{ components.form.job_description.placeholder }}"
-                      required></textarea>
-        </div>
+      <div class="form-group">
+        <label for="{{ components.form.job_description.id }}"
+          >{{ components.form.job_description.label }}</label
+        >
+        <textarea
+          id="{{ components.form.job_description.id }}"
+          placeholder="{{ components.form.job_description.placeholder }}"
+          required
+        ></textarea>
+      </div>
 
-        <div class="form-group">
-            <label for="{{ components.form.model_selector.id }}">{{ components.form.model_selector.label }}</label>
-            <select id="{{ components.form.model_selector.id }}">
-                {% for option in components.form.model_selector.options %}
-                <option value="{{ option.value }}"
-                        {% if option.value == components.form.model_selector.default %}selected{% endif %}>
-                    {{ option.label }}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
+      <div class="form-group">
+        <label for="{{ components.form.model_selector.id }}"
+          >{{ components.form.model_selector.label }}</label
+        >
+        <select id="{{ components.form.model_selector.id }}">
+          {% for option in components.form.model_selector.options %}
+          <option
+            value="{{ option.value }}"
+            {%
+            if
+            option.value=""
+            ="components.form.model_selector.default"
+            %}selected{%
+            endif
+            %}
+          >
+            {{ option.label }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
 
-        <button type="submit" class="{{ components.buttons.submit.class }}">
-            {{ components.buttons.submit.label }}
-        </button>
-        <button type="reset" class="{{ components.buttons.reset.class }}">
-            {{ components.buttons.reset.label }}
-        </button>
+      <button type="submit" class="{{ components.buttons.submit.class }}">
+        {{ components.buttons.submit.label }}
+      </button>
+      <button type="reset" class="{{ components.buttons.reset.class }}">
+        {{ components.buttons.reset.label }}
+      </button>
     </form>
 
-    <div id="{{ components.results.container.id }}" class="{{ components.results.container.class }}">
-        <h2>Tailored Resume</h2>
-        <pre id="results-text"></pre>
-        <button id="{{ components.results.download.id }}" 
-                class="{{ components.results.download.class }}">
-            {{ components.results.download.label }}
-        </button>
+    <div
+      id="{{ components.results.container.id }}"
+      class="{{ components.results.container.class }}"
+    >
+      <h2>Tailored Resume</h2>
+      <pre id="results-text"></pre>
+      <button
+        id="{{ components.results.download.id }}"
+        class="{{ components.results.download.class }}"
+      >
+        {{ components.results.download.label }}
+      </button>
     </div>
 
     <script>
-        document.getElementById('resume-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData();
-            
-            const fileInput = document.getElementById('resume-input');
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-            
-            reader.onload = async function(e) {
-                const data = {
-                    resume: e.target.result,
-                    job_description: document.getElementById('job-description').value,
-                    model: document.getElementById('model-selector').value
-                };
+      document.getElementById("resume-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData();
 
-                try {
-                    const response = await fetch('/tailor', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(data)
-                    });
+        const fileInput = document.getElementById("resume-input");
+        const file = fileInput.files[0];
+        const reader = new FileReader();
 
-                    const result = await response.json();
-                    
-                    if (response.ok) {
-                        document.getElementById('results-text').textContent = result.tailored_resume;
-                        document.getElementById('results-container').style.display = 'block';
-                        document.getElementById('download-button').style.display = 'block';
-                    } else {
-                        throw new Error(result.error || 'Failed to process resume');
-                    }
-                } catch (error) {
-                    alert('Error: ' + error.message);
-                }
-            };
-            
-            reader.readAsText(file);
-        });
+        reader.onload = async function (e) {
+          const data = {
+            resume: e.target.result,
+            job_description: document.getElementById("job-description").value,
+            model: document.getElementById("model-selector").value,
+          };
 
-        document.getElementById('download-button').addEventListener('click', () => {
-            const content = document.getElementById('results-text').textContent;
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'tailored_resume.txt';
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        });
+          try {
+            const response = await fetch("/tailor", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(data),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+              document.getElementById("results-text").textContent = result.tailored_resume;
+              document.getElementById("results-container").style.display = "block";
+              document.getElementById("download-button").style.display = "block";
+            } else {
+              throw new Error(result.error || "Failed to process resume");
+            }
+          } catch (error) {
+            alert("Error: " + error.message);
+          }
+        };
+
+        reader.readAsText(file);
+      });
+
+      document.getElementById("download-button").addEventListener("click", () => {
+        const content = document.getElementById("results-text").textContent;
+        const blob = new Blob([content], { type: "text/plain" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "tailored_resume.txt";
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      });
     </script>
-</body>
+  </body>
 </html>

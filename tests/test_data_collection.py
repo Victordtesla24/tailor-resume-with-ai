@@ -6,9 +6,15 @@ from typing import Any
 
 import pytest
 
-from src.data_collection import (DataCollector, DataRetentionManager, PIIData,
-                                 PIIDetector, RateLimiter, TextProcessor,
-                                 Tokenizer)
+from src.data_collection import (
+    DataCollector,
+    DataRetentionManager,
+    PIIData,
+    PIIDetector,
+    RateLimiter,
+    TextProcessor,
+    Tokenizer,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -78,9 +84,7 @@ def test_pii_detection(pii_detector_fixture: PIIDetector, input_resume: str) -> 
 
 
 def test_pii_tokenization(
-    tokenizer_fixture: Tokenizer,
-    pii_detector_fixture: PIIDetector,
-    input_resume: str
+    tokenizer_fixture: Tokenizer, pii_detector_fixture: PIIDetector, input_resume: str
 ) -> None:
     """Test PII tokenization functionality."""
     pii = pii_detector_fixture.detect(input_resume)
@@ -93,21 +97,12 @@ def test_pii_tokenization(
     assert "[ORGANIZATION]" in tokenized
 
 
-def test_data_collection(
-    test_file: str,
-    input_resume: str,
-    input_job: str
-) -> None:
+def test_data_collection(test_file: str, input_resume: str, input_job: str) -> None:
     """Test data collection functionality."""
     collector = DataCollector(test_file)
     metadata = {"source": "test"}
 
-    collector.save_training_data(
-        input_resume,
-        input_job,
-        "Tailored output",
-        metadata
-    )
+    collector.save_training_data(input_resume, input_job, "Tailored output", metadata)
 
     # Verify saved data
     with open(test_file, encoding="utf-8") as f:
