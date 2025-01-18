@@ -1,9 +1,9 @@
-setuptools==57.5.0
-wheel==0.37.1
+setuptools==70.0.0
+wheel==0.38.1
 cython==0.29.24
 numpy==1.22.0
 pandas==1.3.5
-scikit-learn==1.0.2
+scikit-learn==1.5.0
 streamlit==1.40.1
 openai==1.59.8
 anthropic>=0.3.0
