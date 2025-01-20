@@ -5,7 +5,7 @@ cython>=0.29.33
 
 # Core dependencies
 numpy>=1.24.0,<1.25.0
-pandas>=1.5.0,<1.6.0
+pandas>=1.5.0,<2.3.0
 typing-extensions>=4.5.0
 pydantic>=1.9.0,<2.0.0
 
